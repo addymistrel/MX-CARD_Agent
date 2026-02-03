@@ -1,7 +1,9 @@
+import asyncio
 from typing import Any, AsyncGenerator
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from openai import APIConnectionError, APIError, AsyncOpenAI, RateLimitError
 from common.constants.environment_constants import EnvironmentConstants
+from common.constants.llm_client_constants import LLMClientConstants
 from common.helpers.environment_helper import EnvironmentHelper as Env
 from client.response import TextDelta, TokenUsage, StreamEvent, EventType
 
@@ -11,6 +13,7 @@ load_dotenv()
 class LLMClient:
     def __init__(self) -> None:
         self._client: AsyncOpenAI | None = None
+        self._max_retries: int = LLMClientConstants.MAX_RETRIES
 
     def get_client(self) -> AsyncOpenAI:
         if self._client is None:
@@ -33,15 +36,81 @@ class LLMClient:
             "messages": messages,
             "stream": stream,
         }
-        if stream:
-            await self._stream_response(client, kwargs)
-        else:
-            event = await self._non_stream_response(client, kwargs)
-            yield event
-        return
-    
-    async def _stream_response(self, client: AsyncOpenAI, kwargs: dict[str, Any]):
-        pass
+        
+        for attempt in range(self._max_retries + 1):
+            try:
+                if stream:
+                    async for event in self._stream_response(client, kwargs):
+                        yield event
+                else:
+                    event = await self._non_stream_response(client, kwargs)
+                    yield event
+                return
+            except RateLimitError as e:
+                if attempt < self._max_retries:
+                    wait_time = 2 ** attempt
+                    await asyncio.sleep(wait_time)
+                else:
+                    yield StreamEvent(
+                        type=EventType.ERROR,
+                        error=f"Rate Limit Exceeded: {e}",
+                    )
+                    return
+            except APIConnectionError as e:
+                if attempt < self._max_retries:
+                    wait_time = 2 ** attempt
+                    await asyncio.sleep(wait_time)
+                else:
+                    yield StreamEvent(
+                        type=EventType.ERROR,
+                        error=f"Connection Error: {e}",
+                    )
+                    return
+            except APIError as e:
+                yield StreamEvent(
+                    type=EventType.ERROR,
+                    error=f"API error: {e}"
+                )
+                return 
+
+    async def _stream_response(self, client: AsyncOpenAI, kwargs: dict[str, Any]) -> AsyncGenerator[StreamEvent, None]:
+        response = await client.chat.completions.create(**kwargs)
+
+        finish_reason: str | None = None
+        usage: TokenUsage | None = None
+
+        async for chunk in response:
+            if hasattr(chunk, "usage") and chunk.usage:
+                usage = TokenUsage(
+                    prompt_tokens=chunk.usage.prompt_tokens,
+                    completion_tokens=chunk.usage.completion_tokens,
+                    total_tokens=chunk.usage.total_tokens,
+                    cached_tokens=chunk.usage.prompt_tokens_details.cached_tokens
+                )
+            
+            if not chunk.choices:
+                continue
+
+            choice = chunk.choices[0]
+            delta = choice.delta
+
+            if choice.finish_reason:
+                finish_reason = choice.finish_reason
+            
+            if delta.content:
+                text_delta = TextDelta(content=delta.content)
+                yield StreamEvent(
+                    type=EventType.TEXT_DELTA,
+                    text_delta=text_delta,
+                    finish_reason=finish_reason,
+                    usage=usage
+                )
+        
+        yield StreamEvent(
+            type=EventType.MESSAGE_COMPLETE,
+            finish_reason=finish_reason,
+            usage=usage
+        )
 
     async def _non_stream_response(self, client: AsyncOpenAI, kwargs: dict[str, Any]) -> StreamEvent:
         response = await client.chat.completions.create(**kwargs)
