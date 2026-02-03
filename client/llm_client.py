@@ -5,7 +5,7 @@ from openai import APIConnectionError, APIError, AsyncOpenAI, RateLimitError
 from common.constants.environment_constants import EnvironmentConstants
 from common.constants.llm_client_constants import LLMClientConstants
 from common.helpers.environment_helper import EnvironmentHelper as Env
-from client.response import TextDelta, TokenUsage, StreamEvent, EventType
+from client.response import TextDelta, TokenUsage, StreamEvent, StreamEventType
 
 load_dotenv()
 
@@ -19,7 +19,9 @@ class LLMClient:
         if self._client is None:
             self._client = AsyncOpenAI(
                 api_key=Env.get_env_variable(EnvironmentConstants.OPEN_ROUTER_API_KEY),
-                base_url=Env.get_env_variable(EnvironmentConstants.OPEN_ROUTER_BASE_URL),
+                base_url=Env.get_env_variable(
+                    EnvironmentConstants.OPEN_ROUTER_BASE_URL
+                ),
             )
         return self._client
 
@@ -27,8 +29,10 @@ class LLMClient:
         if self._client is not None:
             await self._client.close()
             self._client = None
-    
-    async def chat_completion(self, messages: list[dict[str, Any]], stream: bool = True) -> AsyncGenerator[StreamEvent, None] :
+
+    async def chat_completion(
+        self, messages: list[dict[str, Any]], stream: bool = True
+    ) -> AsyncGenerator[StreamEvent, None]:
         client: AsyncOpenAI = self.get_client()
 
         kwargs: dict[str, Any] = {
@@ -36,7 +40,7 @@ class LLMClient:
             "messages": messages,
             "stream": stream,
         }
-        
+
         for attempt in range(self._max_retries + 1):
             try:
                 if stream:
@@ -48,32 +52,31 @@ class LLMClient:
                 return
             except RateLimitError as e:
                 if attempt < self._max_retries:
-                    wait_time = 2 ** attempt
+                    wait_time = 2**attempt
                     await asyncio.sleep(wait_time)
                 else:
                     yield StreamEvent(
-                        type=EventType.ERROR,
+                        type=StreamEventType.ERROR,
                         error=f"Rate Limit Exceeded: {e}",
                     )
                     return
             except APIConnectionError as e:
                 if attempt < self._max_retries:
-                    wait_time = 2 ** attempt
+                    wait_time = 2**attempt
                     await asyncio.sleep(wait_time)
                 else:
                     yield StreamEvent(
-                        type=EventType.ERROR,
+                        type=StreamEventType.ERROR,
                         error=f"Connection Error: {e}",
                     )
                     return
             except APIError as e:
-                yield StreamEvent(
-                    type=EventType.ERROR,
-                    error=f"API error: {e}"
-                )
-                return 
+                yield StreamEvent(type=StreamEventType.ERROR, error=f"API error: {e}")
+                return
 
-    async def _stream_response(self, client: AsyncOpenAI, kwargs: dict[str, Any]) -> AsyncGenerator[StreamEvent, None]:
+    async def _stream_response(
+        self, client: AsyncOpenAI, kwargs: dict[str, Any]
+    ) -> AsyncGenerator[StreamEvent, None]:
         response = await client.chat.completions.create(**kwargs)
 
         finish_reason: str | None = None
@@ -85,9 +88,9 @@ class LLMClient:
                     prompt_tokens=chunk.usage.prompt_tokens,
                     completion_tokens=chunk.usage.completion_tokens,
                     total_tokens=chunk.usage.total_tokens,
-                    cached_tokens=chunk.usage.prompt_tokens_details.cached_tokens
+                    cached_tokens=chunk.usage.prompt_tokens_details.cached_tokens,
                 )
-            
+
             if not chunk.choices:
                 continue
 
@@ -96,23 +99,25 @@ class LLMClient:
 
             if choice.finish_reason:
                 finish_reason = choice.finish_reason
-            
+
             if delta.content:
                 text_delta = TextDelta(content=delta.content)
                 yield StreamEvent(
-                    type=EventType.TEXT_DELTA,
+                    type=StreamEventType.TEXT_DELTA,
                     text_delta=text_delta,
                     finish_reason=finish_reason,
-                    usage=usage
+                    usage=usage,
                 )
-        
+
         yield StreamEvent(
-            type=EventType.MESSAGE_COMPLETE,
+            type=StreamEventType.MESSAGE_COMPLETE,
             finish_reason=finish_reason,
-            usage=usage
+            usage=usage,
         )
 
-    async def _non_stream_response(self, client: AsyncOpenAI, kwargs: dict[str, Any]) -> StreamEvent:
+    async def _non_stream_response(
+        self, client: AsyncOpenAI, kwargs: dict[str, Any]
+    ) -> StreamEvent:
         response = await client.chat.completions.create(**kwargs)
         choice = response.choices[0]
         message = choice.message
@@ -120,19 +125,19 @@ class LLMClient:
         text_delta = None
         if message.content:
             text_delta = TextDelta(content=message.content)
-        
+
         usage = None
         if response.usage:
             usage = TokenUsage(
                 prompt_tokens=response.usage.prompt_tokens,
                 completion_tokens=response.usage.completion_tokens,
                 total_tokens=response.usage.total_tokens,
-                cached_tokens=response.usage.prompt_tokens_details.cached_tokens
+                cached_tokens=response.usage.prompt_tokens_details.cached_tokens,
             )
-        
+
         return StreamEvent(
-            type=EventType.TEXT_DELTA,
+            type=StreamEventType.TEXT_DELTA,
             text_delta=text_delta,
             finish_reason=choice.finish_reason,
-            usage=usage
+            usage=usage,
         )
