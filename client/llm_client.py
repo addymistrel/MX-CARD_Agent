@@ -159,17 +159,17 @@ class LLMClient:
                                     )
                                 )
                 
-            for idex, tc in tool_calls.items():
-                if finish_reason == "tool_call" and tc["id"] == choice.tool_calls[0].id:
-                    yield StreamEvent(
-                        type=StreamEventType.TOOL_CALL_COMPLETE,
-                        tool_call=ToolCall(
-                            call_id=tc["id"],
-                            name=tc["name"],
-                            arguments=parse_tool_call_arguments(tc["arguments"]),
-                        )
+        for idex, tc in tool_calls.items():
+            if finish_reason == "tool_call" and tc["id"] == choice.tool_calls[0].id:
+                yield StreamEvent(
+                    type=StreamEventType.TOOL_CALL_COMPLETE,
+                    tool_call=ToolCall(
+                        call_id=tc["id"],
+                        name=tc["name"],
+                        arguments=parse_tool_call_arguments(tc["arguments"]),
                     )
-                    del tool_calls[idex]
+                )
+                del tool_calls[idex]
         yield StreamEvent(
             type=StreamEventType.MESSAGE_COMPLETE,
             finish_reason=finish_reason,
@@ -186,6 +186,17 @@ class LLMClient:
         text_delta = None
         if message.content:
             text_delta = TextDelta(content=message.content)
+
+        tool_calls: list[ToolCall] = []
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                tool_calls.append(
+                    ToolCall(
+                        call_id=tool_call.id or "",
+                        name=tool_call.function.name if tool_call.function and tool_call.function.name else "",
+                        arguments=parse_tool_call_arguments(tool_call.function.arguments) if tool_call.function and tool_call.function.arguments else {},
+                    )
+                )
 
         usage = None
         if response.usage:
