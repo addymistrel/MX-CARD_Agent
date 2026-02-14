@@ -31,7 +31,7 @@ class WriteFileTool(Tool):
         "For partial modifications, use the edit tool instead."
     )
     kind = ToolKind.WRITE
-    schema = WriteFileParams
+    schema: type[BaseModel] = WriteFileParams
 
     async def get_confirmation(
         self, invocation: ToolInvocation

@@ -2,14 +2,23 @@ from tools.base import Tool, ToolInvocation, ToolKind, ToolResult
 from pydantic import BaseModel, Field
 from ddgs import DDGS
 
+from constants.tools import (
+    WEB_SEARCH_DEFAULT_MAX_RESULTS,
+    WEB_SEARCH_MIN_RESULTS,
+    WEB_SEARCH_MAX_RESULTS,
+    WEB_SEARCH_REGION,
+    WEB_SEARCH_SAFESEARCH,
+    WEB_SEARCH_TIMELIMIT,
+)
+
 
 class WebSearchParams(BaseModel):
     query: str = Field(..., description="Search query")
     max_results: int = Field(
-        10,
-        ge=1,
-        le=20,
-        description="Maximum results to return (default: 10)",
+        WEB_SEARCH_DEFAULT_MAX_RESULTS,
+        ge=WEB_SEARCH_MIN_RESULTS,
+        le=WEB_SEARCH_MAX_RESULTS,
+        description=f"Maximum results to return (default: {WEB_SEARCH_DEFAULT_MAX_RESULTS})",
     )
 
 
@@ -17,7 +26,7 @@ class WebSearchTool(Tool):
     name = "web_search"
     description = "Search the web for information. Returns search results with titles, URLs and snippets"
     kind = ToolKind.NETWORK
-    schema = WebSearchParams
+    schema: type[BaseModel] = WebSearchParams
 
     async def execute(self, invocation: ToolInvocation) -> ToolResult:
         params = WebSearchParams(**invocation.params)
@@ -25,9 +34,9 @@ class WebSearchTool(Tool):
         try:
             results = DDGS().text(
                 params.query,
-                region="us-en",
-                safesearch="off",
-                timelimit="y",
+                region=WEB_SEARCH_REGION,
+                safesearch=WEB_SEARCH_SAFESEARCH,
+                timelimit=WEB_SEARCH_TIMELIMIT,
                 page=1,
                 backend="auto",
             )

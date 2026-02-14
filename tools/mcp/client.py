@@ -6,6 +6,7 @@ from typing import Any
 from config.config import MCPServerConfig
 from fastmcp import Client
 from fastmcp.client.transports import SSETransport, StdioTransport
+from mcp.types import TextContent
 
 
 class MCPServerStatus(str, Enum):
@@ -98,12 +99,12 @@ class MCPClient:
             raise RuntimeError(f"Not connected to server {self.name}")
 
         result = await self._client.call_tool(tool_name, arguments)
-
         output = []
         for item in result.content:
-            if hasattr(item, "text"):
+            if isinstance(item, TextContent):
                 output.append(item.text)
             else:
+                output.append(str(item))
                 output.append(str(item))
 
         return {

@@ -1,12 +1,14 @@
 from collections import deque
 from typing import Any
 
+from constants.agent import LOOP_MAX_EXACT_REPEATS, LOOP_MAX_CYCLE_LENGTH, LOOP_HISTORY_MAX_LENGTH
+
 
 class LoopDetector:
     def __init__(self):
-        self.max_exact_repeats = 3
-        self.max_cycle_length = 3
-        self._history: deque[str] = deque(maxlen=20)
+        self.max_exact_repeats = LOOP_MAX_EXACT_REPEATS
+        self.max_cycle_length = LOOP_MAX_CYCLE_LENGTH
+        self._history: deque[str] = deque(maxlen=LOOP_HISTORY_MAX_LENGTH)
 
     def record_action(self, action_type: str, **details: Any):
         output = [action_type]
@@ -31,7 +33,7 @@ class LoopDetector:
         if len(self._history) >= self.max_exact_repeats:
             recent = list(self._history)[-self.max_exact_repeats :]
             if len(set(recent)) == 1:
-                return f"Same action repeated {self.max_exact_repeats} tiems"
+                return f"Same action repeated {self.max_exact_repeats} times"
 
         if len(self._history) >= self.max_cycle_length * 2:
             history = list(self._history)

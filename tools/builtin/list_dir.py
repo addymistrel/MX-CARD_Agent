@@ -18,7 +18,7 @@ class ListDirTool(Tool):
     name = "list_dir"
     description = "List contents of a directory"
     kind = ToolKind.READ
-    schema = ListDirParams
+    schema: type[BaseModel] = ListDirParams
 
     async def execute(self, invocation: ToolInvocation) -> ToolResult:
         params = ListDirParams(**invocation.params)

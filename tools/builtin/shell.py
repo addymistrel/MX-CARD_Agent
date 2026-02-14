@@ -7,31 +7,19 @@ from tools.base import Tool, ToolConfirmation, ToolInvocation, ToolKind, ToolRes
 from pydantic import BaseModel, Field
 import fnmatch
 
-BLOCKED_COMMANDS = {
-    "rm -rf /",
-    "rm -rf ~",
-    "rm -rf /*",
-    "dd if=/dev/zero",
-    "dd if=/dev/random",
-    "mkfs",
-    "fdisk",
-    "parted",
-    ":(){ :|:& };:",  # Fork bomb
-    "chmod 777 /",
-    "chmod -R 777",
-    "shutdown",
-    "reboot",
-    "halt",
-    "poweroff",
-    "init 0",
-    "init 6",
-}
+from constants.tools import (
+    BLOCKED_COMMANDS,
+    SHELL_DEFAULT_TIMEOUT,
+    SHELL_MIN_TIMEOUT,
+    SHELL_MAX_TIMEOUT,
+    SHELL_OUTPUT_MAX_BYTES,
+)
 
 
 class ShellParams(BaseModel):
     command: str = Field(..., description="The shell command to execute")
     timeout: int = Field(
-        120, ge=1, le=600, description="Timeout in seconds (default: 120)"
+        SHELL_DEFAULT_TIMEOUT, ge=SHELL_MIN_TIMEOUT, le=SHELL_MAX_TIMEOUT, description=f"Timeout in seconds (default: {SHELL_DEFAULT_TIMEOUT})"
     )
     cwd: str | None = Field(None, description="Working directory for the command")
 
@@ -41,15 +29,16 @@ class ShellTool(Tool):
     kind = ToolKind.SHELL
     description = "Execute a shell command. Use this for running system commands, scripts and CLI tools."
 
-    schema = ShellParams
+    schema: type[ShellParams] = ShellParams
 
     async def get_confirmation(
         self, invocation: ToolInvocation
     ) -> ToolConfirmation | None:
         params = ShellParams(**invocation.params)
+        command_lower = params.command.lower().strip()
 
         for blocked in BLOCKED_COMMANDS:
-            if blocked in params.command:
+            if blocked in command_lower:
                 return ToolConfirmation(
                     tool_name=self.name,
                     params=invocation.params,
@@ -130,8 +119,8 @@ class ShellTool(Tool):
         if exit_code != 0:
             output += f"\nExit code: {exit_code}"
 
-        if len(output) > 100 * 1024:
-            output = output[: 100 * 1024] + "\n... [output truncated]"
+        if len(output) > SHELL_OUTPUT_MAX_BYTES:
+            output = output[:SHELL_OUTPUT_MAX_BYTES] + "\n... [output truncated]"
 
         return ToolResult(
             success=exit_code == 0,

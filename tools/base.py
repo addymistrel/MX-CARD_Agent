@@ -178,7 +178,7 @@ class Tool(abc.ABC):
             }
 
         if isinstance(schema, dict):
-            result = {
+            result: dict[str, Any] = {
                 "name": self.name,
                 "description": self.description,
             }

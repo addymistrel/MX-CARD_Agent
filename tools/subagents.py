@@ -1,6 +1,14 @@
 import asyncio
 from typing import Any
 from config.config import Config
+from constants.agent import (
+    SUBAGENT_DEFAULT_MAX_TURNS,
+    SUBAGENT_DEFAULT_TIMEOUT_SECONDS,
+    SUBAGENT_INVESTIGATOR_MAX_TURNS,
+    SUBAGENT_INVESTIGATOR_TIMEOUT,
+    SUBAGENT_REVIEWER_MAX_TURNS,
+    SUBAGENT_REVIEWER_TIMEOUT,
+)
 from tools.base import Tool, ToolInvocation, ToolResult
 from dataclasses import dataclass
 from pydantic import BaseModel, Field
@@ -18,8 +26,8 @@ class SubagentDefinition:
     description: str
     goal_prompt: str
     allowed_tools: list[str] | None = None
-    max_turns: int = 20
-    timeout_seconds: float = 600
+    max_turns: int = SUBAGENT_DEFAULT_MAX_TURNS
+    timeout_seconds: float = SUBAGENT_DEFAULT_TIMEOUT_SECONDS
 
 
 class SubagentTool(Tool):
@@ -35,7 +43,7 @@ class SubagentTool(Tool):
     def description(self) -> str:
         return f"subagent_{self.definition.description}"
 
-    schema = SubagentParams
+    schema: type[BaseModel] = SubagentParams
 
     def is_mutating(self, params: dict[str, Any]) -> bool:
         return True
@@ -76,12 +84,11 @@ class SubagentTool(Tool):
 
         try:
             async with Agent(subagent_config) as agent:
-                deadline = (
-                    asyncio.get_event_loop().time() + self.definition.timeout_seconds
-                )
+                loop = asyncio.get_running_loop()
+                deadline = loop.time() + self.definition.timeout_seconds
 
                 async for event in agent.run(prompt):
-                    if asyncio.get_event_loop().time() > deadline:
+                    if loop.time() > deadline:
                         terminate_response = "timeout"
                         final_response = "Sub-agent timed out"
                         break
@@ -136,8 +143,8 @@ Look for bugs, code smells, security issues, and improvement opportunities.
 Use read_file, list_dir and grep to examine the code.
 Do NOT modify any files.""",
     allowed_tools=["read_file", "grep", "list_dir"],
-    max_turns=10,
-    timeout_seconds=300,
+    max_turns=SUBAGENT_REVIEWER_MAX_TURNS,
+    timeout_seconds=SUBAGENT_REVIEWER_TIMEOUT,
 )
 
 

@@ -39,7 +39,7 @@ class EditTool(Tool):
         "For creating new files or complete rewrites, use write_file instead."
     )
     kind = ToolKind.WRITE
-    schema = EditParams
+    schema: type[BaseModel] = EditParams
 
     async def get_confirmation(
         self,

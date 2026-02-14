@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import AsyncGenerator, Awaitable, Callable
+import json
+from typing import AsyncGenerator, Callable
 from agent.events import AgentEvent, AgentEventType
 from agent.session import Session
 from client.response import StreamEventType, TokenUsage, ToolCall, ToolResultMessage
@@ -15,13 +16,14 @@ class Agent:
         confirmation_callback: Callable[[ToolConfirmation], bool] | None = None,
     ):
         self.config = config
-        self.session: Session | None = Session(self.config)
+        self.session = Session(self.config)
         self.session.approval_manager.confirmation_callback = confirmation_callback
 
     async def run(self, message: str):
+        ctx = self.session.get_context_manager()
         await self.session.hook_system.trigger_before_agent(message)
         yield AgentEvent.agent_start(message)
-        self.session.context_manager.add_user_message(message)
+        ctx.add_user_message(message)
 
         final_response: str | None = None
 
@@ -36,21 +38,21 @@ class Agent:
 
     async def _agentic_loop(self) -> AsyncGenerator[AgentEvent, None]:
         max_turns = self.config.max_turns
+        ctx = self.session.get_context_manager()
 
         for turn_num in range(max_turns):
             self.session.increment_turn()
             response_text = ""
 
             # check for context overflow
-            if self.session.context_manager.needs_compression():
-                summary, usage = await self.session.chat_compactor.compress(
-                    self.session.context_manager
-                )
+            if ctx.needs_compression():
+                summary, usage = await self.session.chat_compactor.compress(ctx)
 
                 if summary:
-                    self.session.context_manager.replace_with_summary(summary)
-                    self.session.context_manager.set_latest_usage(usage)
-                    self.session.context_manager.add_usage(usage)
+                    ctx.replace_with_summary(summary)
+                    if usage:
+                        ctx.set_latest_usage(usage)
+                        ctx.add_usage(usage)
 
             tool_schemas = self.session.tool_registry.get_schemas()
 
@@ -58,7 +60,7 @@ class Agent:
             usage: TokenUsage | None = None
 
             async for event in self.session.client.chat_completion(
-                self.session.context_manager.get_messages(),
+                ctx.get_messages(),
                 tools=tool_schemas if tool_schemas else None,
             ):
                 if event.type == StreamEventType.TEXT_DELTA:
@@ -76,8 +78,8 @@ class Agent:
                 elif event.type == StreamEventType.MESSAGE_COMPLETE:
                     usage = event.usage
 
-            self.session.context_manager.add_assistant_message(
-                response_text or None,
+            ctx.add_assistant_message(
+                response_text or "",
                 (
                     [
                         {
@@ -85,7 +87,7 @@ class Agent:
                             "type": "function",
                             "function": {
                                 "name": tc.name,
-                                "arguments": str(tc.arguments),
+                                "arguments": json.dumps(tc.arguments),
                             },
                         }
                         for tc in tool_calls
@@ -103,29 +105,31 @@ class Agent:
 
             if not tool_calls:
                 if usage:
-                    self.session.context_manager.set_latest_usage(usage)
-                    self.session.context_manager.add_usage(usage)
+                    ctx.set_latest_usage(usage)
+                    ctx.add_usage(usage)
 
-                self.session.context_manager.prune_tool_outputs()
+                ctx.prune_tool_outputs()
                 return
 
             tool_call_results: list[ToolResultMessage] = []
 
             for tool_call in tool_calls:
+                tool_name = tool_call.name or "unknown"
+
                 yield AgentEvent.tool_call_start(
                     tool_call.call_id,
-                    tool_call.name,
+                    tool_name,
                     tool_call.arguments,
                 )
 
                 self.session.loop_detector.record_action(
                     "tool_call",
-                    tool_name=tool_call.name,
+                    tool_name=tool_name,
                     args=tool_call.arguments,
                 )
 
                 result = await self.session.tool_registry.invoke(
-                    tool_call.name,
+                    tool_name,
                     tool_call.arguments,
                     self.config.cwd,
                     self.session.hook_system,
@@ -134,7 +138,7 @@ class Agent:
 
                 yield AgentEvent.tool_call_complete(
                     tool_call.call_id,
-                    tool_call.name,
+                    tool_name,
                     result,
                 )
 
@@ -147,7 +151,7 @@ class Agent:
                 )
 
             for tool_result in tool_call_results:
-                self.session.context_manager.add_tool_result(
+                ctx.add_tool_result(
                     tool_result.tool_call_id,
                     tool_result.content,
                 )
@@ -155,13 +159,13 @@ class Agent:
             loop_detection_error = self.session.loop_detector.check_for_loop()
             if loop_detection_error:
                 loop_prompt = create_loop_breaker_prompt(loop_detection_error)
-                self.session.context_manager.add_user_message(loop_prompt)
+                ctx.add_user_message(loop_prompt)
 
             if usage:
-                self.session.context_manager.set_latest_usage(usage)
-                self.session.context_manager.add_usage(usage)
+                ctx.set_latest_usage(usage)
+                ctx.add_usage(usage)
 
-            self.session.context_manager.prune_tool_outputs()
+            ctx.prune_tool_outputs()
         yield AgentEvent.agent_error(f"Maximum turns ({max_turns}) reached")
 
     async def __aenter__(self) -> Agent:
@@ -174,7 +178,8 @@ class Agent:
         exc_val,
         exc_tb,
     ) -> None:
-        if self.session and self.session.client and self.session.mcp_manager:
-            await self.session.client.close()
-            await self.session.mcp_manager.shutdown()
-            self.session = None
+        if self.session:
+            if self.session.client:
+                await self.session.client.close()
+            if self.session.mcp_manager:
+                await self.session.mcp_manager.shutdown()

@@ -2,6 +2,9 @@ import asyncio
 from pathlib import Path
 import sys
 import click
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from agent.agent import Agent
 from agent.events import AgentEventType
@@ -9,6 +12,8 @@ from agent.persistence import PersistenceManager, SessionSnapshot
 from agent.session import Session
 from config.config import ApprovalPolicy, Config
 from config.loader import load_config
+from constants.app import APP_NAME
+from constants.ui import WELCOME_COMMANDS
 from ui.tui import TUI, get_console
 
 console = get_console()
@@ -23,15 +28,16 @@ class CLI:
     async def run_single(self, message: str) -> str | None:
         async with Agent(self.config) as agent:
             self.agent = agent
-            return await self._process_message(message)
+            result = await self._process_message(message)
+            return result if result is not None else ""
 
     async def run_interactive(self) -> str | None:
         self.tui.print_welcome(
-            "AI Agent",
+            APP_NAME,
             lines=[
                 f"model: {self.config.model_name}",
                 f"cwd: {self.config.cwd}",
-                "commands: /help /config /approval /model /exit",
+                WELCOME_COMMANDS,
             ],
         )
 
@@ -62,14 +68,13 @@ class CLI:
         console.print("\n[dim]Goodbye![/dim]")
 
     def _get_tool_kind(self, tool_name: str) -> str | None:
-        tool_kind = None
+        if not self.agent:
+            return None
         tool = self.agent.session.tool_registry.get(tool_name)
         if not tool:
-            tool_kind = None
+            return None
 
-        tool_kind = tool.kind.value
-
-        return tool_kind
+        return tool.kind.value
 
     async def _process_message(self, message: str) -> str | None:
         if not self.agent:
@@ -129,8 +134,11 @@ class CLI:
             return False
         elif command == "/help":
             self.tui.show_help()
+        elif not self.agent:
+            console.print("[error]No active agent session[/error]")
         elif command == "/clear":
-            self.agent.session.context_manager.clear()
+            ctx = self.agent.session.get_context_manager()
+            ctx.clear()
             self.agent.session.loop_detector.clear()
             console.print("[success]Conversation cleared [/success]")
         elif command == "/config":
@@ -160,7 +168,7 @@ class CLI:
                         f"[error]Incorrect approval policy: {cmd_args} [/error]"
                     )
                     console.print(
-                        f"Valid options: {', '.join(p for p in ApprovalPolicy)}"
+                        f"Valid options: {', '.join(p.value for p in ApprovalPolicy)}"
                     )
             else:
                 console.print(f"Current approval policy: {self.config.approval.value}")
@@ -185,13 +193,14 @@ class CLI:
                 )
         elif cmd_name == "/save":
             persistence_manager = PersistenceManager()
+            ctx = self.agent.session.get_context_manager()
             session_snapshot = SessionSnapshot(
                 session_id=self.agent.session.session_id,
                 created_at=self.agent.session.created_at,
                 updated_at=self.agent.session.updated_at,
                 turn_count=self.agent.session.turn_count,
-                messages=self.agent.session.context_manager.get_messages(),
-                total_usage=self.agent.session.context_manager.total_usage,
+                messages=ctx.get_messages(),
+                total_usage=ctx.total_usage,
             )
             persistence_manager.save_session(session_snapshot)
             console.print(
@@ -222,21 +231,22 @@ class CLI:
                     session.created_at = snapshot.created_at
                     session.updated_at = snapshot.updated_at
                     session.turn_count = snapshot.turn_count
-                    session.context_manager.total_usage = snapshot.total_usage
+                    ctx = session.get_context_manager()
+                    ctx.total_usage = snapshot.total_usage
 
                     for msg in snapshot.messages:
                         if msg.get("role") == "system":
                             continue
                         elif msg["role"] == "user":
-                            session.context_manager.add_user_message(
+                            ctx.add_user_message(
                                 msg.get("content", "")
                             )
                         elif msg["role"] == "assistant":
-                            session.context_manager.add_assistant_message(
+                            ctx.add_assistant_message(
                                 msg.get("content", ""), msg.get("tool_calls")
                             )
                         elif msg["role"] == "tool":
-                            session.context_manager.add_tool_result(
+                            ctx.add_tool_result(
                                 msg.get("tool_call_id", ""), msg.get("content", "")
                             )
 
@@ -249,19 +259,20 @@ class CLI:
                     )
         elif cmd_name == "/checkpoint":
             persistence_manager = PersistenceManager()
+            ctx = self.agent.session.get_context_manager()
             session_snapshot = SessionSnapshot(
                 session_id=self.agent.session.session_id,
                 created_at=self.agent.session.created_at,
                 updated_at=self.agent.session.updated_at,
                 turn_count=self.agent.session.turn_count,
-                messages=self.agent.session.context_manager.get_messages(),
-                total_usage=self.agent.session.context_manager.total_usage,
+                messages=ctx.get_messages(),
+                total_usage=ctx.total_usage,
             )
             checkpoint_id = persistence_manager.save_checkpoint(session_snapshot)
             console.print(f"[success]Checkpoint created: {checkpoint_id}[/success]")
         elif cmd_name == "/restore":
             if not cmd_args:
-                console.print(f"[error]Usage: /restire <checkpoint_id> [/error]")
+                console.print(f"[error]Usage: /restore <checkpoint_id> [/error]")
             else:
                 persistence_manager = PersistenceManager()
                 snapshot = persistence_manager.load_checkpoint(cmd_args)
@@ -276,21 +287,22 @@ class CLI:
                     session.created_at = snapshot.created_at
                     session.updated_at = snapshot.updated_at
                     session.turn_count = snapshot.turn_count
-                    session.context_manager.total_usage = snapshot.total_usage
+                    ctx = session.get_context_manager()
+                    ctx.total_usage = snapshot.total_usage
 
                     for msg in snapshot.messages:
                         if msg.get("role") == "system":
                             continue
                         elif msg["role"] == "user":
-                            session.context_manager.add_user_message(
+                            ctx.add_user_message(
                                 msg.get("content", "")
                             )
                         elif msg["role"] == "assistant":
-                            session.context_manager.add_assistant_message(
+                            ctx.add_assistant_message(
                                 msg.get("content", ""), msg.get("tool_calls")
                             )
                         elif msg["role"] == "tool":
-                            session.context_manager.add_tool_result(
+                            ctx.add_tool_result(
                                 msg.get("tool_call_id", ""), msg.get("content", "")
                             )
 
@@ -299,7 +311,7 @@ class CLI:
 
                     self.agent.session = session
                     console.print(
-                        f"[success]Resumed session: {session.session_id}, checkpoint: {checkpoint_id}[/success]"
+                        f"[success]Resumed session: {session.session_id}, checkpoint: {cmd_args}[/success]"
                     )
         else:
             console.print(f"[error]Unknown command: {cmd_name}[/error]")
@@ -323,6 +335,7 @@ def main(
         config = load_config(cwd=cwd)
     except Exception as e:
         console.print(f"[error]Configuration Error: {e}[/error]")
+        sys.exit(1)
 
     errors = config.validate()
 

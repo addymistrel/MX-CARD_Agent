@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 from typing import Any, Awaitable, Callable
 from config.config import ApprovalPolicy
+from constants.safety import DANGEROUS_COMMAND_PATTERNS, SAFE_COMMAND_PATTERNS
 from tools.base import ToolConfirmation
 
 
@@ -24,57 +25,8 @@ class ApprovalContext:
     is_dangerous: bool = False
 
 
-DANGEROUS_PATTERNS = [
-    # File system destruction
-    r"rm\s+(-rf?|--recursive)\s+[/~]",
-    r"rm\s+-rf?\s+\*",
-    r"rmdir\s+[/~]",
-    # Disk operations
-    r"dd\s+if=",
-    r"mkfs",
-    r"fdisk",
-    r"parted",
-    # System control
-    r"shutdown",
-    r"reboot",
-    r"halt",
-    r"poweroff",
-    r"init\s+[06]",
-    # Permission changes on root
-    r"chmod\s+(-R\s+)?777\s+[/~]",
-    r"chown\s+-R\s+.*\s+[/~]",
-    # Network exposure
-    r"nc\s+-l",
-    r"netcat\s+-l",
-    # Code execution from network
-    r"curl\s+.*\|\s*(bash|sh)",
-    r"wget\s+.*\|\s*(bash|sh)",
-    # Fork bomb
-    r":\(\)\s*\{\s*:\|:&\s*\}\s*;",
-]
-
-# Patterns for safe commands (can be auto-approved)
-SAFE_PATTERNS = [
-    # Information commands
-    r"^(ls|dir|pwd|cd|echo|cat|head|tail|less|more|wc)(\s|$)",
-    r"^(find|locate|which|whereis|file|stat)(\s|$)",
-    # Development tools (read-only)
-    r"^git\s+(status|log|diff|show|branch|remote|tag)(\s|$)",
-    r"^(npm|yarn|pnpm)\s+(list|ls|outdated)(\s|$)",
-    r"^pip\s+(list|show|freeze)(\s|$)",
-    r"^cargo\s+(tree|search)(\s|$)",
-    # Text processing (usually safe)
-    r"^(grep|awk|sed|cut|sort|uniq|tr|diff|comm)(\s|$)",
-    # System info
-    r"^(date|cal|uptime|whoami|id|groups|hostname|uname)(\s|$)",
-    r"^(env|printenv|set)$",
-    # Process info
-    r"^(ps|top|htop|pgrep)(\s|$)",
-]
-
-
 def is_dangerous_command(command: str) -> bool:
-    for pattern in DANGEROUS_PATTERNS:
+    for pattern in DANGEROUS_COMMAND_PATTERNS:
         if re.search(pattern, command, re.IGNORECASE):
             return True
 
@@ -82,7 +34,7 @@ def is_dangerous_command(command: str) -> bool:
 
 
 def is_safe_command(command: str) -> bool:
-    for pattern in SAFE_PATTERNS:
+    for pattern in SAFE_COMMAND_PATTERNS:
         if re.search(pattern, command, re.IGNORECASE):
             return True
 
@@ -136,11 +88,8 @@ class ApprovalManager:
                 return decision
 
         for path in context.affected_paths:
-            path_decision = ApprovalDecision.NEEDS_CONFIRMATION
-            if path.is_relative_to(self.cwd):
-                path_decision = ApprovalDecision.APPROVED
-            else:
-                return path_decision
+            if not path.is_relative_to(self.cwd):
+                return ApprovalDecision.NEEDS_CONFIRMATION
 
         if context.is_dangerous:
             if self.approval_policy == ApprovalPolicy.YOLO:

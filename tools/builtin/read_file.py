@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from constants.tools import READ_FILE_MAX_SIZE, READ_FILE_MAX_OUTPUT_TOKENS
 from tools.base import Tool, ToolInvocation, ToolKind, ToolResult
 from utils.paths import is_binary_file, resolve_path
 from utils.text import count_tokens, truncate_text
@@ -34,10 +35,10 @@ class ReadFileTool(Tool):
     )
     kind = ToolKind.READ
 
-    schema = ReadFileParams
+    schema: type[BaseModel] = ReadFileParams
 
-    MAX_FILE_SIZE = 1024 * 1024 * 10
-    MAX_OUTPUT_TOKENS = 25000
+    MAX_FILE_SIZE = READ_FILE_MAX_SIZE
+    MAX_OUTPUT_TOKENS = READ_FILE_MAX_OUTPUT_TOKENS
 
     async def execute(self, invocation: ToolInvocation) -> ToolResult:
         params = ReadFileParams(**invocation.params)
@@ -104,8 +105,9 @@ class ReadFileTool(Tool):
             if token_count > self.MAX_OUTPUT_TOKENS:
                 output = truncate_text(
                     output,
-                    self.MAX_OUTPUT_TOKENS,
+                    max_tokens=self.MAX_OUTPUT_TOKENS,
                     suffix=f"\n... [truncated {total_lines} total lines]",
+                    model=self.config.model_name,
                 )
                 truncated = True
 

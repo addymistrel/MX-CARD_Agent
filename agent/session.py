@@ -5,6 +5,7 @@ import uuid
 from client.llm_client import LLMClient
 from config.config import Config
 from config.loader import get_data_dir
+from constants.app import MEMORY_FILE_NAME
 from context.compaction import ChatCompactor
 from context.loop_detector import LoopDetector
 from context.manager import ContextManager
@@ -53,7 +54,7 @@ class Session:
     def _load_memory(self) -> str | None:
         data_dir = get_data_dir()
         data_dir.mkdir(parents=True, exist_ok=True)
-        path = data_dir / "user_memory.json"
+        path = data_dir / MEMORY_FILE_NAME
 
         if not path.exists():
             return None
@@ -79,13 +80,20 @@ class Session:
 
         return self.turn_count
 
+    def get_context_manager(self) -> ContextManager:
+        """Return context_manager, raising if not yet initialized."""
+        if self.context_manager is None:
+            raise RuntimeError("Session not initialized – call initialize() first")
+        return self.context_manager
+
     def get_stats(self) -> dict[str, Any]:
+        ctx = self.get_context_manager()
         return {
             "session_id": self.session_id,
             "created_at": self.created_at.isoformat(),
             "turn_count": self.turn_count,
-            "message_count": self.context_manager.message_count,
-            "token_usage": self.context_manager.total_usage,
+            "message_count": ctx.message_count,
+            "token_usage": ctx.total_usage,
             "tools_count": len(self.tool_registry.get_tools()),
             "mcp_servers": len(self.tool_registry.connected_mcp_servers),
         }

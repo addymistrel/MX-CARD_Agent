@@ -3,9 +3,21 @@ from dataclasses import dataclass
 from datetime import datetime
 import json
 import os
+import sys
 from typing import Any
 from client.response import TokenUsage
 from config.loader import get_data_dir
+from constants.agent import FILE_PERMISSION_DIR, FILE_PERMISSION_FILE
+from constants.app import SESSIONS_DIR_NAME, CHECKPOINTS_DIR_NAME, CHECKPOINT_TIMESTAMP_FORMAT
+
+
+def _secure_chmod(path: str | os.PathLike, mode: int) -> None:
+    """Set file permissions on Unix-like systems; no-op on Windows."""
+    if sys.platform != "win32":
+        try:
+            os.chmod(path, mode)
+        except OSError:
+            pass
 
 
 @dataclass
@@ -42,12 +54,12 @@ class SessionSnapshot:
 class PersistenceManager:
     def __init__(self):
         self.data_dir = get_data_dir()
-        self.sessions_dir = self.data_dir / "sessions"
+        self.sessions_dir = self.data_dir / SESSIONS_DIR_NAME
         self.sessions_dir.mkdir(parents=True, exist_ok=True)
-        self.checkpoints_dir = self.data_dir / "checkpoints"
+        self.checkpoints_dir = self.data_dir / CHECKPOINTS_DIR_NAME
         self.checkpoints_dir.mkdir(parents=True, exist_ok=True)
-        os.chmod(self.sessions_dir, 0o700)
-        os.chmod(self.checkpoints_dir, 0o700)
+        _secure_chmod(self.sessions_dir, FILE_PERMISSION_DIR)
+        _secure_chmod(self.checkpoints_dir, FILE_PERMISSION_DIR)
 
     def save_session(self, snapshot: SessionSnapshot) -> None:
         file_path = self.sessions_dir / f"{snapshot.session_id}.json"
@@ -55,7 +67,7 @@ class PersistenceManager:
         with open(file_path, "w", encoding="utf-8") as fp:
             json.dump(snapshot.to_dict(), fp, indent=2)
 
-        os.chmod(file_path, 0o600)
+        _secure_chmod(file_path, FILE_PERMISSION_FILE)
 
     def load_session(self, session_id: str) -> SessionSnapshot | None:
         file_path = self.sessions_dir / f"{session_id}.json"
@@ -86,13 +98,13 @@ class PersistenceManager:
         return sessions
 
     def save_checkpoint(self, snapshot: SessionSnapshot) -> str:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime(CHECKPOINT_TIMESTAMP_FORMAT)
         checkpoint_id = f"{snapshot.session_id}_{timestamp}"
         file_path = self.checkpoints_dir / f"{checkpoint_id}.json"
 
         with open(file_path, "w", encoding="utf-8") as fp:
             json.dump(snapshot.to_dict(), fp, indent=2)
-        os.chmod(file_path, 0o600)
+        _secure_chmod(file_path, FILE_PERMISSION_FILE)
         return checkpoint_id
 
     def load_checkpoint(self, checkpoint_id: str) -> SessionSnapshot | None:

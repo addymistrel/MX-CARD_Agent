@@ -14,7 +14,7 @@ class TodosTool(Tool):
     name = "todos"
     description = "Manage a task list for the current session. Use this to track progress on multi-step tasks."
     kind = ToolKind.MEMORY
-    schema = TodosParams
+    schema: type[BaseModel] = TodosParams
 
     def __init__(self, config: Config) -> None:
         super().__init__(config)

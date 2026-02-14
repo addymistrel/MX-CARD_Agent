@@ -13,13 +13,13 @@ class TestTool(Tool):
         "This tool is discovered from .unified_agent/tool/test_tool.py"
     )
     kind = ToolKind.READ
-    schema = TestToolParams
+    schema: type[BaseModel] = TestToolParams
 
     async def execute(self, invocation: ToolInvocation) -> ToolResult:
         params = TestToolParams(**invocation.params)
         message = params.message
 
         output = f"Test tool received: {message}\n"
-        output += "Tool was discovered from: .ai-agent/tool/test_tool.py"
+        output += "Tool was discovered from: .mx-card-agent/tool/test_tool.py"
 
         return ToolResult.success_result(output)

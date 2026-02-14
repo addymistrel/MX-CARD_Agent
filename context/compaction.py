@@ -1,6 +1,12 @@
 from typing import Any
 from client.llm_client import LLMClient
 from client.response import StreamEventType, TokenUsage
+from constants.agent import (
+    COMPACTION_TOOL_OUTPUT_TRUNCATE,
+    COMPACTION_ASSISTANT_TRUNCATE,
+    COMPACTION_USER_TRUNCATE,
+    COMPACTION_TOOL_ARGS_TRUNCATE,
+)
 from context.manager import ContextManager
 from prompts.system import get_compression_prompt
 
@@ -22,16 +28,16 @@ class ChatCompactor:
             if role == "tool":
                 tool_id = msg.get("tool_call_id", "unknown")
 
-                truncated = content[:2000] if len(content) > 2000 else content
-                if len(content) > 2000:
+                truncated = content[:COMPACTION_TOOL_OUTPUT_TRUNCATE] if len(content) > COMPACTION_TOOL_OUTPUT_TRUNCATE else content
+                if len(content) > COMPACTION_TOOL_OUTPUT_TRUNCATE:
                     truncated += "\n... [tool output truncated]"
 
                 output.append(f"[Tool Result ({tool_id})]:\n{truncated}")
             elif role == "assistant":
                 tool_details = []
                 if content:
-                    truncated = content[:3000] if len(content) > 3000 else content
-                    if len(content) > 3000:
+                    truncated = content[:COMPACTION_ASSISTANT_TRUNCATE] if len(content) > COMPACTION_ASSISTANT_TRUNCATE else content
+                    if len(content) > COMPACTION_ASSISTANT_TRUNCATE:
                         truncated += "\n... [response truncated]"
                     output.append(f"Assistant:\n{truncated}")
 
@@ -41,14 +47,14 @@ class ChatCompactor:
                         name = func.get("name", "unknown")
                         args = func.get("arguments", "{}")
 
-                        if len(args) > 500:
-                            args = args[:500]
+                        if len(args) > COMPACTION_TOOL_ARGS_TRUNCATE:
+                            args = args[:COMPACTION_TOOL_ARGS_TRUNCATE]
                         tool_details.append(f"  - {name}({args})")
 
                     output.append("Assistant called tools:\n" + "\n".join(tool_details))
             else:
-                truncated = content[:1500] if len(content) > 1500 else content
-                if len(content) > 1500:
+                truncated = content[:COMPACTION_USER_TRUNCATE] if len(content) > COMPACTION_USER_TRUNCATE else content
+                if len(content) > COMPACTION_USER_TRUNCATE:
                     truncated += "\n... [message truncated]"
                 output.append(f"User:\n{truncated}")
 
@@ -82,7 +88,10 @@ class ChatCompactor:
             ):
                 if event.type == StreamEventType.MESSAGE_COMPLETE:
                     usage = event.usage
-                    summary += event.text_delta.content
+                    if event.text_delta:
+                        summary += event.text_delta.content
+                elif event.type == StreamEventType.ERROR:
+                    return None, None
 
             if not summary or not usage:
                 return None, None

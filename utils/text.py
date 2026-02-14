@@ -1,16 +1,18 @@
 import tiktoken
 
+from constants.models import DEFAULT_TOKENIZER_ENCODING, DEFAULT_TOKEN_MODEL
+
 
 def get_tokenizer(model: str):
     try:
         encoding = tiktoken.encoding_for_model(model)
         return encoding.encode
     except Exception:
-        encoding = tiktoken.get_encoding("cl100k_base")
+        encoding = tiktoken.get_encoding(DEFAULT_TOKENIZER_ENCODING)
         return encoding.encode
 
 
-def count_tokens(text: str, model: str = "gpt-4") -> int:
+def count_tokens(text: str, model: str = DEFAULT_TOKEN_MODEL) -> int:
     tokenizer = get_tokenizer(model)
 
     if tokenizer:

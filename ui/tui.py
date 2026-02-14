@@ -12,38 +12,13 @@ from rich.console import Group
 from rich.syntax import Syntax
 from rich.markdown import Markdown
 from config.config import Config
+from constants.ui import AGENT_THEME, TUI_MAX_BLOCK_TOKENS
+from constants.tools import TOOL_ARG_PREFERRED_ORDER, FILE_EXTENSION_LANGUAGE_MAP
 from tools.base import ToolConfirmation
 from utils.paths import display_path_rel_to_cwd
 import re
 
 from utils.text import truncate_text
-
-AGENT_THEME = Theme(
-    {
-        # General
-        "info": "cyan",
-        "warning": "yellow",
-        "error": "bright_red bold",
-        "success": "green",
-        "dim": "dim",
-        "muted": "grey50",
-        "border": "grey35",
-        "highlight": "bold cyan",
-        # Roles
-        "user": "bright_blue bold",
-        "assistant": "bright_white",
-        # Tools
-        "tool": "bright_magenta bold",
-        "tool.read": "cyan",
-        "tool.write": "yellow",
-        "tool.shell": "magenta",
-        "tool.network": "bright_blue",
-        "tool.memory": "green",
-        "tool.mcp": "bright_cyan",
-        # Code / blocks
-        "code": "white",
-    }
-)
 
 _console: Console | None = None
 
@@ -67,7 +42,7 @@ class TUI:
         self._tool_args_by_call_id: dict[str, dict[str, Any]] = {}
         self.config = config
         self.cwd = self.config.cwd
-        self._max_block_tokens = 2500
+        self._max_block_tokens = TUI_MAX_BLOCK_TOKENS
 
     def begin_assistant(self) -> None:
         self.console.print()
@@ -83,19 +58,7 @@ class TUI:
         self.console.print(content, end="", markup=False)
 
     def _ordered_args(self, tool_name: str, args: dict[str, Any]) -> list[tuple]:
-        _PREFERRED_ORDER = {
-            "read_file": ["path", "offset", "limit"],
-            "write_file": ["path", "create_directories", "content"],
-            "edit": ["path", "replace_all", "old_string", "new_string"],
-            "shell": ["command", "timeout", "cwd"],
-            "list_dir": ["path", "include_hidden"],
-            "grep": ["path", "case_insensitive", "pattern"],
-            "glob": ["path", "pattern"],
-            "todos": ["id", "action", "content"],
-            "memory": ["action", "key", "value"],
-        }
-
-        preferred = _PREFERRED_ORDER.get(tool_name, [])
+        preferred = TOOL_ARG_PREFERRED_ORDER.get(tool_name, [])
         ordered: list[tuple[str, Any]] = []
         seen = set()
 
@@ -201,34 +164,7 @@ class TUI:
         if not path:
             return "text"
         suffix = Path(path).suffix.lower()
-        return {
-            ".py": "python",
-            ".js": "javascript",
-            ".jsx": "jsx",
-            ".ts": "typescript",
-            ".tsx": "tsx",
-            ".json": "json",
-            ".toml": "toml",
-            ".yaml": "yaml",
-            ".yml": "yaml",
-            ".md": "markdown",
-            ".sh": "bash",
-            ".bash": "bash",
-            ".zsh": "bash",
-            ".rs": "rust",
-            ".go": "go",
-            ".java": "java",
-            ".kt": "kotlin",
-            ".swift": "swift",
-            ".c": "c",
-            ".h": "c",
-            ".cpp": "cpp",
-            ".hpp": "cpp",
-            ".css": "css",
-            ".html": "html",
-            ".xml": "xml",
-            ".sql": "sql",
-        }.get(suffix, "text")
+        return FILE_EXTENSION_LANGUAGE_MAP.get(suffix, "text")
 
     def print_welcome(self, title: str, lines: list[str]) -> None:
         body = "\n".join(lines)
@@ -268,41 +204,59 @@ class TUI:
         )
 
         args = self._tool_args_by_call_id.get(call_id, {})
+        metadata = metadata or {}
 
         primary_path = None
         blocks = []
-        if isinstance(metadata, dict) and isinstance(metadata.get("path"), str):
+        if isinstance(metadata.get("path"), str):
             primary_path = metadata.get("path")
 
         if name == "read_file" and success:
             if primary_path:
-                start_line, code = self._extract_read_file_code(output)
+                extracted = self._extract_read_file_code(output)
 
-                shown_start = metadata.get("shown_start")
-                shown_end = metadata.get("shown_end")
-                total_lines = metadata.get("total_lines")
-                pl = self._guess_language(primary_path)
-
-                header_parts = [display_path_rel_to_cwd(primary_path, self.cwd)]
-                header_parts.append(" • ")
-
-                if shown_start and shown_end and total_lines:
-                    header_parts.append(
-                        f"lines {shown_start}-{shown_end} of {total_lines}"
+                if extracted is None:
+                    output_display = truncate_text(
+                        output,
+                        "",
+                        self._max_block_tokens,
                     )
-
-                header = "".join(header_parts)
-                blocks.append(Text(header, style="muted"))
-                blocks.append(
-                    Syntax(
-                        code,
-                        pl,
-                        theme="monokai",
-                        line_numbers=True,
-                        start_line=start_line,
-                        word_wrap=False,
+                    blocks.append(
+                        Syntax(
+                            output_display,
+                            "text",
+                            theme="monokai",
+                            word_wrap=False,
+                        )
                     )
-                )
+                else:
+                    start_line, code = extracted
+
+                    shown_start = metadata.get("shown_start")
+                    shown_end = metadata.get("shown_end")
+                    total_lines = metadata.get("total_lines")
+                    pl = self._guess_language(primary_path)
+
+                    header_parts = [display_path_rel_to_cwd(primary_path, self.cwd)]
+                    header_parts.append(" • ")
+
+                    if shown_start and shown_end and total_lines:
+                        header_parts.append(
+                            f"lines {shown_start}-{shown_end} of {total_lines}"
+                        )
+
+                    header = "".join(header_parts)
+                    blocks.append(Text(header, style="muted"))
+                    blocks.append(
+                        Syntax(
+                            code,
+                            pl,
+                            theme="monokai",
+                            line_numbers=True,
+                            start_line=start_line,
+                            word_wrap=False,
+                        )
+                    )
             else:
                 output_display = truncate_text(
                     output,
@@ -554,7 +508,7 @@ class TUI:
         self.console.print(panel)
 
     def handle_confirmation(self, confirmation: ToolConfirmation) -> bool:
-        output = [
+        output: list[Any] = [
             Text(confirmation.tool_name, style="tool"),
             Text(confirmation.description, style="code"),
         ]

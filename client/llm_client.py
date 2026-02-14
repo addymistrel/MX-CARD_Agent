@@ -12,19 +12,20 @@ from client.response import (
     parse_tool_call_arguments,
 )
 from config.config import Config
+from constants.models import LLM_MAX_RETRIES
 
 
 class LLMClient:
     def __init__(self, config: Config) -> None:
         self._client: AsyncOpenAI | None = None
-        self._max_retries: int = 3
+        self._max_retries: int = LLM_MAX_RETRIES
         self.config = config
 
     def get_client(self) -> AsyncOpenAI:
         if self._client is None:
             self._client = AsyncOpenAI(
-                api_key=self.config.api_key,  # "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"
-                base_url=self.config.base_url,  # "https://openrouter.ai/api/v1"
+                api_key=self.config.api_key,
+                base_url=self.config.base_url,
             )
         return self._client
 
@@ -123,7 +124,11 @@ class LLMClient:
                     prompt_tokens=chunk.usage.prompt_tokens,
                     completion_tokens=chunk.usage.completion_tokens,
                     total_tokens=chunk.usage.total_tokens,
-                    cached_tokens=chunk.usage.prompt_tokens_details.cached_tokens,
+                    cached_tokens=(
+                        chunk.usage.prompt_tokens_details.cached_tokens
+                        if chunk.usage.prompt_tokens_details
+                        else 0
+                    ),
                 )
 
             if not chunk.choices:
@@ -163,7 +168,7 @@ class LLMClient:
                                     ),
                                 )
 
-                        if tool_call_delta.function.arguments:
+                    if tool_call_delta.function and tool_call_delta.function.arguments:
                             tool_calls[idx][
                                 "arguments"
                             ] += tool_call_delta.function.arguments
@@ -223,7 +228,11 @@ class LLMClient:
                 prompt_tokens=response.usage.prompt_tokens,
                 completion_tokens=response.usage.completion_tokens,
                 total_tokens=response.usage.total_tokens,
-                cached_tokens=response.usage.prompt_tokens_details.cached_tokens,
+                cached_tokens=(
+                    response.usage.prompt_tokens_details.cached_tokens
+                    if response.usage.prompt_tokens_details
+                    else 0
+                ),
             )
 
         return StreamEvent(

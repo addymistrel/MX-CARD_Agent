@@ -4,6 +4,7 @@ import re
 from tools.base import Tool, ToolInvocation, ToolKind, ToolResult
 from pydantic import BaseModel, Field
 
+from constants.tools import GREP_MAX_FILES, DIR_SCAN_EXCLUDES
 from utils.paths import is_binary_file, resolve_path
 
 
@@ -22,7 +23,7 @@ class GrepTool(Tool):
     name = "grep"
     description = "Search for a regex pattern in file contents. Returns matching lines with file paths and line numbers."
     kind = ToolKind.READ
-    schema = GrepParams
+    schema: type[BaseModel] = GrepParams
 
     async def execute(self, invocation: ToolInvocation) -> ToolResult:
         params = GrepParams(**invocation.params)
@@ -101,7 +102,7 @@ class GrepTool(Tool):
             dirs[:] = [
                 d
                 for d in dirs
-                if d not in {"node_modules", "__pycache__", ".git", ".venv", "venv"}
+                if d not in DIR_SCAN_EXCLUDES
             ]
 
             for filename in filenames:
@@ -111,7 +112,7 @@ class GrepTool(Tool):
                 file_path = Path(root) / filename
                 if not is_binary_file(file_path):
                     files.append(file_path)
-                    if len(files) >= 500:
+                    if len(files) >= GREP_MAX_FILES:
                         return files
 
         return files

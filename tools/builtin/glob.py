@@ -4,6 +4,7 @@ import re
 from tools.base import Tool, ToolInvocation, ToolKind, ToolResult
 from pydantic import BaseModel, Field
 
+from constants.tools import GLOB_MAX_RESULTS, DIR_SCAN_EXCLUDES, GREP_MAX_FILES
 from utils.paths import is_binary_file, resolve_path
 
 
@@ -20,7 +21,7 @@ class GlobTool(Tool):
         "Find files matching a glob pattern. Supports ** for recursive matching."
     )
     kind = ToolKind.READ
-    schema = GlobParams
+    schema: type[BaseModel] = GlobParams
 
     async def execute(self, invocation: ToolInvocation) -> ToolResult:
         params = GlobParams(**invocation.params)
@@ -38,7 +39,7 @@ class GlobTool(Tool):
 
         output_lines = []
 
-        for file_path in matches[:1000]:
+        for file_path in matches[:GLOB_MAX_RESULTS]:
             try:
                 rel_path = file_path.relative_to(invocation.cwd)
             except Exception:
@@ -46,8 +47,8 @@ class GlobTool(Tool):
 
             output_lines.append(str(rel_path))
 
-        if len(matches) > 1000:
-            output_lines.append(f"...(limited to 1000 results)")
+        if len(matches) > GLOB_MAX_RESULTS:
+            output_lines.append(f"...(limited to {GLOB_MAX_RESULTS} results)")
 
         return ToolResult.success_result(
             "\n".join(output_lines),
@@ -64,7 +65,7 @@ class GlobTool(Tool):
             dirs[:] = [
                 d
                 for d in dirs
-                if d not in {"node_modules", "__pycache__", ".git", ".venv", "venv"}
+                if d not in DIR_SCAN_EXCLUDES
             ]
 
             for filename in filenames:
@@ -74,7 +75,7 @@ class GlobTool(Tool):
                 file_path = Path(root) / filename
                 if not is_binary_file(file_path):
                     files.append(file_path)
-                    if len(files) >= 500:
+                    if len(files) >= GREP_MAX_FILES:
                         return files
 
         return files

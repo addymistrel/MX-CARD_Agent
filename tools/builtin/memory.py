@@ -2,6 +2,7 @@ import json
 import uuid
 from config.config import Config
 from config.loader import get_data_dir
+from constants.app import MEMORY_FILE_NAME
 from tools.base import Tool, ToolInvocation, ToolKind, ToolResult
 from pydantic import BaseModel, Field
 
@@ -20,12 +21,12 @@ class MemoryTool(Tool):
     name = "memory"
     description = "Store and retrieve persistent memory. Use this to remember user preferences, important context or notes."
     kind = ToolKind.MEMORY
-    schema = MemoryParams
+    schema: type[BaseModel] = MemoryParams
 
     def _load_memory(self) -> dict:
         data_dir = get_data_dir()
         data_dir.mkdir(parents=True, exist_ok=True)
-        path = data_dir / "user_memory.json"
+        path = data_dir / MEMORY_FILE_NAME
 
         if not path.exists():
             return {"entries": {}}
@@ -39,7 +40,7 @@ class MemoryTool(Tool):
     def _save_memory(self, memory: dict) -> None:
         data_dir = get_data_dir()
         data_dir.mkdir(parents=True, exist_ok=True)
-        path = data_dir / "user_memory.json"
+        path = data_dir / MEMORY_FILE_NAME
 
         path.write_text(json.dumps(memory, indent=2, ensure_ascii=False))
 

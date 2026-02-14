@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Any
 from client.response import TokenUsage
 from config.config import Config
+from constants.agent import PRUNE_PROTECT_TOKENS, PRUNE_MINIMUM_TOKENS, PRUNED_CONTENT_PLACEHOLDER
+from constants.models import CONTEXT_COMPRESSION_RATIO
 from prompts.system import get_system_prompt
 from dataclasses import dataclass, field
 
@@ -27,15 +29,15 @@ class MessageItem:
         if self.tool_calls:
             result["tool_calls"] = self.tool_calls
 
-        if self.content:
-            result["content"] = self.content
+        if self.content or self.role in ("assistant", "tool", "user"):
+            result["content"] = self.content or ""
 
         return result
 
 
 class ContextManager:
-    PRUNE_PROTECT_TOKENS = 40_000
-    PRUNE_MINIMUM_TOKENS = 20_000
+    PRUNE_PROTECT_TOKENS = PRUNE_PROTECT_TOKENS
+    PRUNE_MINIMUM_TOKENS = PRUNE_MINIMUM_TOKENS
 
     def __init__(
         self,
@@ -69,7 +71,7 @@ class ContextManager:
     def add_assistant_message(
         self,
         content: str,
-        tool_calls: list[dict[str, any]] | None = None,
+        tool_calls: list[dict[str, Any]] | None = None,
     ) -> None:
         item = MessageItem(
             role="assistant",
@@ -113,7 +115,7 @@ class ContextManager:
         context_limit = self.config.model.context_window
         current_tokens = self._latest_usage.total_tokens
 
-        return current_tokens > (context_limit * 0.8)
+        return current_tokens > (context_limit * CONTEXT_COMPRESSION_RATIO)
 
     def set_latest_usage(self, usage: TokenUsage):
         self._latest_usage = usage
@@ -199,7 +201,7 @@ I'll continue with the REMAINING tasks only, starting from where we left off."""
         pruned_count = 0
 
         for msg in to_prune:
-            msg.content = "[Old tool result content cleared]"
+            msg.content = PRUNED_CONTENT_PLACEHOLDER
             msg.token_count = count_tokens(msg.content, self._model_name)
             msg.pruned_at = datetime.now()
             pruned_count += 1

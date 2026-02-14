@@ -19,7 +19,7 @@ class ToolRegistry:
 
     @property
     def connected_mcp_servers(self) -> list[Tool]:
-        return self._mcp_tools.values()
+        return list(self._mcp_tools.values())
 
     def register(self, tool: Tool) -> None:
         if tool.name in self._tools:
@@ -135,8 +135,7 @@ class ToolRegistry:
             result = ToolResult.error_result(
                 f"Internal error: {str(e)}",
                 metadata={
-                    "tool_name",
-                    name,
+                    "tool_name": name,
                 },
             )
 

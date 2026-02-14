@@ -5,6 +5,7 @@ import sys
 from typing import Any
 from config.config import Config
 from config.loader import get_config_dir
+from constants.app import APP_PROJECT_DIR
 from tools.base import Tool
 from tools.registry import ToolRegistry
 
@@ -27,8 +28,8 @@ class ToolDiscoveryManager:
         spec.loader.exec_module(module)
         return module
 
-    def _find_tool_classes(self, module: Any) -> list[Tool]:
-        tools: list[Tool] = []
+    def _find_tool_classes(self, module: Any) -> list[type[Tool]]:
+        tools: list[type[Tool]] = []
 
         for name in dir(module):
             obj = getattr(module, name)
@@ -43,7 +44,7 @@ class ToolDiscoveryManager:
         return tools
 
     def discover_from_directory(self, directory: Path) -> None:
-        tool_dir = directory / ".ai-agent" / "tools"
+        tool_dir = directory / APP_PROJECT_DIR / "tools"
 
         if not tool_dir.exists() or not tool_dir.is_dir():
             return
