@@ -1,0 +1,38 @@
+[HOOK] {"timestamp": "2026-02-15T00:14:33.188007", "trigger": "before_agent", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": null, "user_message": "reload my last session", "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:14:40.735984", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "memory", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:14:43.576820", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "list_dir", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:14:48.146200", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "filesystem__list_allowed_directories", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:14:52.257725", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "glob", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:14:56.169932", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "read_file", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:15:03.607157", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "filesystem__list_directory", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:15:07.143767", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "read_file", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:15:10.583915", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "glob", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:15:13.990141", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "glob", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:15:18.501641", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "read_file", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:15:26.306127", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "list_dir", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:15:32.428006", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "read_file", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:16:29.935287", "trigger": "before_agent", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": null, "user_message": "tell me what is the use of .mx-card-agent folder here and how to use it", "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:19:06.725846", "trigger": "before_agent", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": null, "user_message": "tell me is there any things missing from .env file", "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:19:11.163910", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "glob", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:19:15.216060", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "read_file", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:19:20.207169", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "read_file", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:19:23.558144", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "read_file", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:19:27.490458", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "read_file", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:19:31.287906", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "read_file", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:19:34.415772", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "list_dir", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:20:27.965658", "trigger": "before_agent", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": null, "user_message": "only update .env with missing variable", "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:20:34.306825", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "edit", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:05.126582", "trigger": "before_agent", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": null, "user_message": "please commit the changes the cwd is a git repo", "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:09.546981", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:13.370515", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:18.485601", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:22.214762", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:26.500354", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:31.150105", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:35.360208", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:41.313252", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:44.799829", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:49.098462", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:23:53.073646", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:24:41.393596", "trigger": "before_agent", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": null, "user_message": "execute git add . and then commit with a message all files ready for final commit and then commit and push origin head", "error": null}
+[HOOK] {"timestamp": "2026-02-15T00:24:46.425148", "trigger": "before_tool", "cwd": "D:\\My_Files\\Projects\\MX-CARD_Agent", "tool_name": "shell", "user_message": null, "error": null}

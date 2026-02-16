@@ -1,0 +1,22 @@
+hooks_enabled = true
+
+[model]
+temperature = 0
+
+[[hooks]]
+name='test_before_tool'
+trigger='before_tool'
+command='python ./scripts/test_tool.py'
+
+[[hooks]]
+name='test_before_agent'
+trigger='before_agent'
+command='python ./scripts/test_tool.py'
+
+[mcp_servers.filesystem]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", "D:\\My_Files\\Projects\\MX-CARD_Agent\\.mx-card-agent", "/tmp"]
+
+[mcp_servers.filesystem2]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem222222222222", "D:\\My_Files\\Projects\\MX-CARD_Agent\\.mx-card-agent", "/tmp"]
