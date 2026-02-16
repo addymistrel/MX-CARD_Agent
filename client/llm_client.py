@@ -5,7 +5,7 @@ from openai import APIConnectionError, APIError, AsyncOpenAI, RateLimitError
 from common.constants.environment_constants import EnvironmentConstants
 from common.constants.llm_client_constants import LLMClientConstants
 from common.helpers.environment_helper import EnvironmentHelper as Env
-from client.response import TextDelta, TokenUsage, StreamEvent, StreamEventType
+from client.response import TextDelta, TokenUsage, StreamEvent, StreamEventType, ToolCall, ToolCallDelta, parse_tool_call_arguments
 
 load_dotenv()
 
@@ -29,9 +29,22 @@ class LLMClient:
         if self._client is not None:
             await self._client.close()
             self._client = None
+    
+    def _build_tools(self, tools: list[dict[str, Any]]):
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.get("name"),
+                    "description": tool.get("description", ""),
+                    "parameters": tool.get("parameters", {"type": "object", "properties": {}}),
+                }
+            }
+            for tool in tools
+        ]
 
     async def chat_completion(
-        self, messages: list[dict[str, Any]], stream: bool = True
+        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None = None, stream: bool = True
     ) -> AsyncGenerator[StreamEvent, None]:
         client: AsyncOpenAI = self.get_client()
 
@@ -40,6 +53,10 @@ class LLMClient:
             "messages": messages,
             "stream": stream,
         }
+
+        if tools:
+            kwargs["tools"] = self._build_tools(tools)
+            kwargs["tool_choice"] = "auto"
 
         for attempt in range(self._max_retries + 1):
             try:
@@ -81,6 +98,7 @@ class LLMClient:
 
         finish_reason: str | None = None
         usage: TokenUsage | None = None
+        tool_calls: dict[int, dict[str, Any]] = {}
 
         async for chunk in response:
             if hasattr(chunk, "usage") and chunk.usage:
@@ -108,7 +126,50 @@ class LLMClient:
                     finish_reason=finish_reason,
                     usage=usage,
                 )
+            
+            if delta.tool_calls:
+                for tool_call_delta in delta.tool_calls:
+                    idx = tool_call_delta.index
+                    if idx not in tool_calls:
+                        tool_calls[idx] = {
+                            "id": tool_call_delta.id or "",
+                            "name": "",
+                            "arguments": "",
+                        }
 
+                        if tool_call_delta.function:
+                            if tool_call_delta.function.name:
+                                tool_calls[idx]["name"] = tool_call_delta.function.name
+                                yield StreamEvent(
+                                    type=StreamEventType.TOOL_CALL_START,
+                                    tool_call_delta=ToolCallDelta(
+                                        call_id=tool_calls[idx]["id"],
+                                        name=tool_calls[idx]["name"],
+                                    )
+                                )
+                            
+                            if tool_call_delta.function.arguments:
+                                tool_calls[idx]["arguments"] += tool_call_delta.function.arguments
+                                yield StreamEvent(
+                                    type=StreamEventType.TOOL_CALL_DELTA,
+                                    tool_call_delta=ToolCallDelta(
+                                        call_id=tool_calls[idx]["id"],
+                                        name=tool_calls[idx]["name"],
+                                        arguments_delta=tool_call_delta.function.arguments,
+                                    )
+                                )
+                
+        for idex, tc in tool_calls.items():
+            if finish_reason == "tool_call" and tc["id"] == choice.tool_calls[0].id:
+                yield StreamEvent(
+                    type=StreamEventType.TOOL_CALL_COMPLETE,
+                    tool_call=ToolCall(
+                        call_id=tc["id"],
+                        name=tc["name"],
+                        arguments=parse_tool_call_arguments(tc["arguments"]),
+                    )
+                )
+                del tool_calls[idex]
         yield StreamEvent(
             type=StreamEventType.MESSAGE_COMPLETE,
             finish_reason=finish_reason,
@@ -125,6 +186,17 @@ class LLMClient:
         text_delta = None
         if message.content:
             text_delta = TextDelta(content=message.content)
+
+        tool_calls: list[ToolCall] = []
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                tool_calls.append(
+                    ToolCall(
+                        call_id=tool_call.id or "",
+                        name=tool_call.function.name if tool_call.function and tool_call.function.name else "",
+                        arguments=parse_tool_call_arguments(tool_call.function.arguments) if tool_call.function and tool_call.function.arguments else {},
+                    )
+                )
 
         usage = None
         if response.usage:
