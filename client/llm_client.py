@@ -1,55 +1,68 @@
 import asyncio
 from typing import Any, AsyncGenerator
-from dotenv import load_dotenv
 from openai import APIConnectionError, APIError, AsyncOpenAI, RateLimitError
-from common.constants.environment_constants import EnvironmentConstants
-from common.constants.llm_client_constants import LLMClientConstants
-from common.helpers.environment_helper import EnvironmentHelper as Env
-from client.response import TextDelta, TokenUsage, StreamEvent, StreamEventType, ToolCall, ToolCallDelta, parse_tool_call_arguments
 
-load_dotenv()
+from client.response import (
+    StreamEventType,
+    StreamEvent,
+    TextDelta,
+    TokenUsage,
+    ToolCall,
+    ToolCallDelta,
+    parse_tool_call_arguments,
+)
+from config.config import Config
+from constants.models import LLM_MAX_RETRIES
 
 
 class LLMClient:
-    def __init__(self) -> None:
+    def __init__(self, config: Config) -> None:
         self._client: AsyncOpenAI | None = None
-        self._max_retries: int = LLMClientConstants.MAX_RETRIES
+        self._max_retries: int = LLM_MAX_RETRIES
+        self.config = config
 
     def get_client(self) -> AsyncOpenAI:
         if self._client is None:
             self._client = AsyncOpenAI(
-                api_key=Env.get_env_variable(EnvironmentConstants.OPEN_ROUTER_API_KEY),
-                base_url=Env.get_env_variable(
-                    EnvironmentConstants.OPEN_ROUTER_BASE_URL
-                ),
+                api_key=self.config.api_key,
+                base_url=self.config.base_url,
             )
         return self._client
 
     async def close(self) -> None:
-        if self._client is not None:
+        if self._client:
             await self._client.close()
             self._client = None
-    
+
     def _build_tools(self, tools: list[dict[str, Any]]):
         return [
             {
                 "type": "function",
                 "function": {
-                    "name": tool.get("name"),
+                    "name": tool["name"],
                     "description": tool.get("description", ""),
-                    "parameters": tool.get("parameters", {"type": "object", "properties": {}}),
-                }
+                    "parameters": tool.get(
+                        "parameters",
+                        {
+                            "type": "object",
+                            "properties": {},
+                        },
+                    ),
+                },
             }
             for tool in tools
         ]
 
     async def chat_completion(
-        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None = None, stream: bool = True
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        stream: bool = True,
     ) -> AsyncGenerator[StreamEvent, None]:
-        client: AsyncOpenAI = self.get_client()
+        client = self.get_client()
 
-        kwargs: dict[str, Any] = {
-            "model": Env.get_env_variable(EnvironmentConstants.DEFAULT_MODEL_NAME),
+        kwargs = {
+            "model": self.config.model_name,
             "messages": messages,
             "stream": stream,
         }
@@ -74,7 +87,7 @@ class LLMClient:
                 else:
                     yield StreamEvent(
                         type=StreamEventType.ERROR,
-                        error=f"Rate Limit Exceeded: {e}",
+                        error=f"Rate limit exceeded: {e}",
                     )
                     return
             except APIConnectionError as e:
@@ -84,15 +97,20 @@ class LLMClient:
                 else:
                     yield StreamEvent(
                         type=StreamEventType.ERROR,
-                        error=f"Connection Error: {e}",
+                        error=f"Connection error: {e}",
                     )
                     return
             except APIError as e:
-                yield StreamEvent(type=StreamEventType.ERROR, error=f"API error: {e}")
+                yield StreamEvent(
+                    type=StreamEventType.ERROR,
+                    error=f"API error: {e}",
+                )
                 return
 
     async def _stream_response(
-        self, client: AsyncOpenAI, kwargs: dict[str, Any]
+        self,
+        client: AsyncOpenAI,
+        kwargs: dict[str, Any],
     ) -> AsyncGenerator[StreamEvent, None]:
         response = await client.chat.completions.create(**kwargs)
 
@@ -106,7 +124,11 @@ class LLMClient:
                     prompt_tokens=chunk.usage.prompt_tokens,
                     completion_tokens=chunk.usage.completion_tokens,
                     total_tokens=chunk.usage.total_tokens,
-                    cached_tokens=chunk.usage.prompt_tokens_details.cached_tokens,
+                    cached_tokens=(
+                        chunk.usage.prompt_tokens_details.cached_tokens
+                        if chunk.usage.prompt_tokens_details
+                        else 0
+                    ),
                 )
 
             if not chunk.choices:
@@ -119,17 +141,15 @@ class LLMClient:
                 finish_reason = choice.finish_reason
 
             if delta.content:
-                text_delta = TextDelta(content=delta.content)
                 yield StreamEvent(
                     type=StreamEventType.TEXT_DELTA,
-                    text_delta=text_delta,
-                    finish_reason=finish_reason,
-                    usage=usage,
+                    text_delta=TextDelta(delta.content),
                 )
-            
+
             if delta.tool_calls:
                 for tool_call_delta in delta.tool_calls:
                     idx = tool_call_delta.index
+
                     if idx not in tool_calls:
                         tool_calls[idx] = {
                             "id": tool_call_delta.id or "",
@@ -144,32 +164,34 @@ class LLMClient:
                                     type=StreamEventType.TOOL_CALL_START,
                                     tool_call_delta=ToolCallDelta(
                                         call_id=tool_calls[idx]["id"],
-                                        name=tool_calls[idx]["name"],
-                                    )
+                                        name=tool_call_delta.function.name,
+                                    ),
                                 )
-                            
-                            if tool_call_delta.function.arguments:
-                                tool_calls[idx]["arguments"] += tool_call_delta.function.arguments
-                                yield StreamEvent(
-                                    type=StreamEventType.TOOL_CALL_DELTA,
-                                    tool_call_delta=ToolCallDelta(
-                                        call_id=tool_calls[idx]["id"],
-                                        name=tool_calls[idx]["name"],
-                                        arguments_delta=tool_call_delta.function.arguments,
-                                    )
-                                )
-                
-        for idex, tc in tool_calls.items():
-            if finish_reason == "tool_call" and tc["id"] == choice.tool_calls[0].id:
-                yield StreamEvent(
-                    type=StreamEventType.TOOL_CALL_COMPLETE,
-                    tool_call=ToolCall(
-                        call_id=tc["id"],
-                        name=tc["name"],
-                        arguments=parse_tool_call_arguments(tc["arguments"]),
-                    )
-                )
-                del tool_calls[idex]
+
+                    if tool_call_delta.function and tool_call_delta.function.arguments:
+                            tool_calls[idx][
+                                "arguments"
+                            ] += tool_call_delta.function.arguments
+
+                            yield StreamEvent(
+                                type=StreamEventType.TOOL_CALL_DELTA,
+                                tool_call_delta=ToolCallDelta(
+                                    call_id=tool_calls[idx]["id"],
+                                    name=tool_call_delta.function.name,
+                                    arguments_delta=tool_call_delta.function.arguments,
+                                ),
+                            )
+
+        for idx, tc in tool_calls.items():
+            yield StreamEvent(
+                type=StreamEventType.TOOL_CALL_COMPLETE,
+                tool_call=ToolCall(
+                    call_id=tc["id"],
+                    name=tc["name"],
+                    arguments=parse_tool_call_arguments(tc["arguments"]),
+                ),
+            )
+
         yield StreamEvent(
             type=StreamEventType.MESSAGE_COMPLETE,
             finish_reason=finish_reason,
@@ -177,7 +199,9 @@ class LLMClient:
         )
 
     async def _non_stream_response(
-        self, client: AsyncOpenAI, kwargs: dict[str, Any]
+        self,
+        client: AsyncOpenAI,
+        kwargs: dict[str, Any],
     ) -> StreamEvent:
         response = await client.chat.completions.create(**kwargs)
         choice = response.choices[0]
@@ -189,12 +213,12 @@ class LLMClient:
 
         tool_calls: list[ToolCall] = []
         if message.tool_calls:
-            for tool_call in message.tool_calls:
+            for tc in message.tool_calls:
                 tool_calls.append(
                     ToolCall(
-                        call_id=tool_call.id or "",
-                        name=tool_call.function.name if tool_call.function and tool_call.function.name else "",
-                        arguments=parse_tool_call_arguments(tool_call.function.arguments) if tool_call.function and tool_call.function.arguments else {},
+                        call_id=tc.id,
+                        name=tc.function.name,
+                        arguments=parse_tool_call_arguments(tc.function.arguments),
                     )
                 )
 
@@ -204,11 +228,15 @@ class LLMClient:
                 prompt_tokens=response.usage.prompt_tokens,
                 completion_tokens=response.usage.completion_tokens,
                 total_tokens=response.usage.total_tokens,
-                cached_tokens=response.usage.prompt_tokens_details.cached_tokens,
+                cached_tokens=(
+                    response.usage.prompt_tokens_details.cached_tokens
+                    if response.usage.prompt_tokens_details
+                    else 0
+                ),
             )
 
         return StreamEvent(
-            type=StreamEventType.TEXT_DELTA,
+            type=StreamEventType.MESSAGE_COMPLETE,
             text_delta=text_delta,
             finish_reason=choice.finish_reason,
             usage=usage,
