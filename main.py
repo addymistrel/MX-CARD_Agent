@@ -1,10 +1,107 @@
 import asyncio
+import os
 from pathlib import Path
 import sys
 import click
 from dotenv import load_dotenv
 
+# When running from a PyInstaller bundle, files are extracted to sys._MEIPASS.
+# When running as a normal script, use the script's own directory.
+if getattr(sys, "frozen", False):
+    _app_dir = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+else:
+    _app_dir = Path(__file__).resolve().parent
+
+# Load .env from the bundled/app directory first,
+# then from the user's cwd (so user can override if needed).
+load_dotenv(_app_dir / ".env")
 load_dotenv()
+
+
+def _ensure_on_path() -> None:
+    """On first run of the frozen exe, offer to add its directory to the user PATH."""
+    if not getattr(sys, "frozen", False) or sys.platform != "win32":
+        return
+
+    exe_dir = str(Path(sys.executable).resolve().parent)
+
+    # Check if already on PATH
+    user_path = _get_user_path()
+    if user_path is not None:
+        dirs = [d.strip().rstrip("\\") for d in user_path.split(";") if d.strip()]
+        if exe_dir.rstrip("\\").lower() in [d.lower() for d in dirs]:
+            return  # already on PATH
+
+    # Check for a sentinel so we only ask once per location
+    sentinel = Path(exe_dir) / ".path_configured"
+    if sentinel.exists():
+        return
+
+    print(f"\n  The directory containing mxcardagent.exe is not on your PATH.")
+    print(f"  Directory: {exe_dir}\n")
+    answer = input("  Add it to your PATH so you can run 'mxcardagent' from any terminal? [Y/n] ").strip().lower()
+
+    if answer in ("", "y", "yes"):
+        if _add_to_user_path(exe_dir):
+            print(f"\n  ✓ Added to PATH. Restart your terminal to use 'mxcardagent' from anywhere.\n")
+        else:
+            print(f"\n  ✗ Could not update PATH automatically.")
+            print(f"    Manually add this directory to your PATH: {exe_dir}\n")
+    else:
+        print(f"\n  Skipped. You can manually add this directory to your PATH later:")
+        print(f"    {exe_dir}\n")
+
+    # Write sentinel so we don't ask again for this location
+    try:
+        sentinel.write_text("configured")
+    except OSError:
+        pass
+
+
+def _get_user_path() -> str | None:
+    """Read the current user-level PATH from the Windows registry."""
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
+            value, _ = winreg.QueryValueEx(key, "Path")
+            return value
+    except (OSError, FileNotFoundError):
+        return os.environ.get("PATH", "")
+
+
+def _add_to_user_path(directory: str) -> bool:
+    """Append a directory to the user-level PATH via the Windows registry."""
+    try:
+        import winreg
+        import ctypes
+
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER, r"Environment", 0,
+            winreg.KEY_READ | winreg.KEY_WRITE,
+        ) as key:
+            try:
+                current, _ = winreg.QueryValueEx(key, "Path")
+            except FileNotFoundError:
+                current = ""
+
+            # Don't duplicate
+            dirs = [d.strip().rstrip("\\") for d in current.split(";") if d.strip()]
+            if directory.rstrip("\\").lower() in [d.lower() for d in dirs]:
+                return True
+
+            new_path = current.rstrip(";") + ";" + directory if current else directory
+            winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
+
+        # Broadcast WM_SETTINGCHANGE so new terminals pick it up immediately
+        HWND_BROADCAST = 0xFFFF
+        WM_SETTINGCHANGE = 0x001A
+        SMTO_ABORTIFHUNG = 0x0002
+        ctypes.windll.user32.SendMessageTimeoutW(
+            HWND_BROADCAST, WM_SETTINGCHANGE, 0, "Environment", SMTO_ABORTIFHUNG, 5000, ctypes.byref(ctypes.c_ulong(0))
+        )
+        return True
+    except Exception:
+        return False
 
 from agent.agent import Agent
 from agent.events import AgentEventType
@@ -382,6 +479,9 @@ def main(
     prompt: str | None,
     cwd: Path | None,
 ):
+    # On first run of the frozen exe, offer to add to PATH
+    _ensure_on_path()
+
     try:
         try:
             config = load_config(cwd=cwd)
