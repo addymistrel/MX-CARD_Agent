@@ -5,3 +5,8 @@ __pycache__/
 *.log
 .env
 .mx-card-agent/
+
+# Installer build artifacts
+installer/dist/
+installer/build/
+installer/python-embed/
