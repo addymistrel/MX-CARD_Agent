@@ -117,3 +117,23 @@ class PersistenceManager:
             data = json.load(fp)
 
         return SessionSnapshot.from_dict(data)
+
+    def list_checkpoints(self) -> list[dict[str, Any]]:
+        checkpoints = []
+        for file_path in self.checkpoints_dir.glob("*.json"):
+            try:
+                with open(file_path, "r", encoding="utf-8") as fp:
+                    data = json.load(fp)
+                checkpoints.append(
+                    {
+                        "checkpoint_id": file_path.stem,
+                        "session_id": data.get("session_id", "unknown"),
+                        "created_at": data.get("created_at", "unknown"),
+                        "turn_count": data.get("turn_count", 0),
+                    }
+                )
+            except (json.JSONDecodeError, OSError):
+                continue
+
+        checkpoints.sort(key=lambda x: x["created_at"], reverse=True)
+        return checkpoints

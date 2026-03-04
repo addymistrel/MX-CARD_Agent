@@ -45,7 +45,7 @@ class WriteFileTool(Tool):
         if not is_new_file:
             try:
                 old_content = path.read_text(encoding="utf-8")
-            except:
+            except Exception:
                 pass
 
         diff = FileDiff(
@@ -76,7 +76,7 @@ class WriteFileTool(Tool):
         if not is_new_file:
             try:
                 old_content = path.read_text(encoding="utf-8")
-            except:
+            except Exception:
                 pass
 
         try:
@@ -88,6 +88,16 @@ class WriteFileTool(Tool):
                 )
 
             path.write_text(params.content, encoding="utf-8")
+
+            # Record change for undo
+            if invocation.undo_tracker:
+                invocation.undo_tracker.record(
+                    path=path,
+                    old_content="" if is_new_file else old_content,
+                    new_content=params.content,
+                    tool_name=self.name,
+                    is_new_file=is_new_file,
+                )
 
             action = "Created" if is_new_file else "Updated"
             line_count = len(params.content.splitlines())

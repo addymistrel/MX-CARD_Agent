@@ -134,6 +134,7 @@ class Agent:
                     self.config.cwd,
                     self.session.hook_system,
                     self.session.approval_manager,
+                    self.session.undo_tracker,
                 )
 
                 yield AgentEvent.tool_call_complete(

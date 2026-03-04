@@ -105,7 +105,6 @@ class MCPClient:
                 output.append(item.text)
             else:
                 output.append(str(item))
-                output.append(str(item))
 
         return {
             "output": "\n".join(output),

@@ -141,6 +141,44 @@ class CLI:
             ctx.clear()
             self.agent.session.loop_detector.clear()
             console.print("[success]Conversation cleared [/success]")
+        elif cmd_name == "/undo":
+            tracker = self.agent.session.undo_tracker
+            if not tracker.has_changes:
+                console.print("[warning]Nothing to undo[/warning]")
+            else:
+                last = tracker.last_change
+                if last:
+                    console.print(
+                        f"\n[bold]Last change:[/bold] {last.summary}"
+                    )
+                    console.print(f"  Path: {last.display_path}")
+                    console.print(
+                        f"  Time: {last.timestamp.strftime('%H:%M:%S')}"
+                    )
+                    response = console.input(
+                        "\n[bold]Undo this change? (y/n):[/bold] "
+                    ).strip()
+                    if response.lower() in {"y", "yes"}:
+                        success, message = tracker.undo_last()
+                        if success:
+                            console.print(f"[success]{message}[/success]")
+                        else:
+                            console.print(f"[error]{message}[/error]")
+                    else:
+                        console.print("[dim]Undo cancelled[/dim]")
+        elif cmd_name == "/undolist":
+            tracker = self.agent.session.undo_tracker
+            changes = tracker.list_recent(10)
+            if not changes:
+                console.print("[dim]No file changes recorded[/dim]")
+            else:
+                console.print(f"\n[bold]Recent file changes ({len(changes)})[/bold]")
+                for i, change in enumerate(changes, 1):
+                    action = "Created" if change.is_new_file else "Modified"
+                    console.print(
+                        f"  {i}. [{change.timestamp.strftime('%H:%M:%S')}] "
+                        f"{action} {change.display_path} ({change.tool_name})"
+                    )
         elif command == "/config":
             console.print("\n[bold]Current Configuration[/bold]")
             console.print(f"  Model: {self.config.model_name}")
@@ -163,7 +201,7 @@ class CLI:
                     console.print(
                         f"[success]Approval policy changed to: {cmd_args} [/success]"
                     )
-                except:
+                except Exception:
                     console.print(
                         f"[error]Incorrect approval policy: {cmd_args} [/error]"
                     )
@@ -270,6 +308,19 @@ class CLI:
             )
             checkpoint_id = persistence_manager.save_checkpoint(session_snapshot)
             console.print(f"[success]Checkpoint created: {checkpoint_id}[/success]")
+        elif cmd_name == "/checkpoints":
+            persistence_manager = PersistenceManager()
+            checkpoints = persistence_manager.list_checkpoints()
+            if not checkpoints:
+                console.print("[dim]No checkpoints found[/dim]")
+            else:
+                console.print(f"\n[bold]Checkpoints ({len(checkpoints)})[/bold]")
+                for cp in checkpoints:
+                    console.print(
+                        f"  • {cp['checkpoint_id']}  "
+                        f"(turns: {cp['turn_count']}, created: {cp['created_at']})"
+                    )
+                console.print("\n[dim]Use /restore <checkpoint_id> to restore[/dim]")
         elif cmd_name == "/restore":
             if not cmd_args:
                 console.print(f"[error]Usage: /restore <checkpoint_id> [/error]")
@@ -332,28 +383,37 @@ def main(
     cwd: Path | None,
 ):
     try:
-        config = load_config(cwd=cwd)
-    except Exception as e:
-        console.print(f"[error]Configuration Error: {e}[/error]")
-        sys.exit(1)
-
-    errors = config.validate()
-
-    if errors:
-        for error in errors:
-            console.print(f"[error]{error}[/error]")
-
-        sys.exit(1)
-
-    cli = CLI(config)
-
-    # messages = [{"role": "user", "content": prompt}]
-    if prompt:
-        result = asyncio.run(cli.run_single(prompt))
-        if result is None:
+        try:
+            config = load_config(cwd=cwd)
+        except Exception as e:
+            console.print(f"[error]Configuration Error: {e}[/error]")
             sys.exit(1)
-    else:
-        asyncio.run(cli.run_interactive())
+
+        errors = config.validate()
+
+        if errors:
+            for error in errors:
+                console.print(f"[error]{error}[/error]")
+
+            sys.exit(1)
+
+        cli = CLI(config)
+
+        # messages = [{"role": "user", "content": prompt}]
+        if prompt:
+            result = asyncio.run(cli.run_single(prompt))
+            if result is None:
+                sys.exit(1)
+        else:
+            asyncio.run(cli.run_interactive())
+    except KeyboardInterrupt:
+        console.print("\n[dim]Interrupted. Goodbye![/dim]")
+        sys.exit(0)
+    except Exception as e:
+        console.print(f"\n[error]Fatal error: {e}[/error]")
+        import traceback
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        sys.exit(1)
 
 
 main()

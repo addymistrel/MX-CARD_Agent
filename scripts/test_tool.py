@@ -8,7 +8,7 @@ from datetime import datetime
 
 def main():
     trigger = os.environ.get("MX_CARD_AGENT_TRIGGER")
-    cwd = os.environ.get("MX_CARD_AGENT_CWD")
+    cwd = os.environ.get("MX_CARD_AGENT_CWD", os.getcwd())
     tool_name = os.environ.get("MX_CARD_AGENT_TOOL_NAME")
     user_message = os.environ.get("MX_CARD_AGENT_USER_MESSAGE")
     error = os.environ.get("MX_CARD_AGENT_ERROR")
@@ -22,9 +22,7 @@ def main():
         "error": error,
     }
 
-    log_path = os.path.expanduser(
-        "D:\\My_Files\\Projects\\MX-CARD_Agent\\.mx-card-agent\\hook.log"
-    )
+    log_path = os.path.join(cwd, ".mx-card-agent", "hook.log")
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
     with open(log_path, "a") as f:
         f.write(f"[HOOK] {json.dumps(log_data)}\n")

@@ -5,7 +5,7 @@ from platformdirs import user_config_dir, user_data_dir
 import tomli
 
 from config.config import Config
-from constants.app import APP_DIR_NAME, CONFIG_FILE_NAME, AGENT_MD_FILE, APP_PROJECT_DIR
+from constants.app import APP_DIR_NAME, CONFIG_FILE_NAME, AGENT_MD_FILE, APP_PROJECT_DIR, DEFAULT_PROJECT_CONFIG
 from utils.errors import ConfigError
 import logging
 
@@ -48,6 +48,24 @@ def _get_project_config(cwd: Path) -> Path | None:
     return None
 
 
+def _ensure_project_dir(cwd: Path) -> None:
+    """Create .mx-card-agent/ with a default config.toml on first run."""
+    agent_dir = cwd.resolve() / APP_PROJECT_DIR
+    config_file = agent_dir / CONFIG_FILE_NAME
+    tools_dir = agent_dir / "tools"
+
+    if agent_dir.exists():
+        return
+
+    try:
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        tools_dir.mkdir(parents=True, exist_ok=True)
+        config_file.write_text(DEFAULT_PROJECT_CONFIG, encoding="utf-8")
+        logger.info(f"Created project config directory: {agent_dir}")
+    except OSError as e:
+        logger.warning(f"Could not create project config directory: {e}")
+
+
 def _get_agent_md_files(cwd: Path) -> str | None:
     current = cwd.resolve()
 
@@ -73,6 +91,8 @@ def _merge_dicts(base: dict[str, Any], override: dict[str, Any]) -> dict[str, An
 
 def load_config(cwd: Path | None) -> Config:
     cwd = cwd or Path.cwd()
+
+    _ensure_project_dir(cwd)
 
     system_path = get_system_config_path()
 

@@ -34,4 +34,4 @@ AGENT_THEME = Theme(
 )
 
 # Welcome banner lines template
-WELCOME_COMMANDS = "commands: /help /config /approval /model /exit"
+WELCOME_COMMANDS = "commands: /help /config /approval /model /undo /exit"

@@ -100,6 +100,16 @@ class EditTool(Tool):
             ensure_parent_directory(path)
             path.write_text(params.new_string, encoding="utf-8")
 
+            # Record change for undo
+            if invocation.undo_tracker:
+                invocation.undo_tracker.record(
+                    path=path,
+                    old_content=None,
+                    new_content=params.new_string,
+                    tool_name=self.name,
+                    is_new_file=True,
+                )
+
             line_count = len(params.new_string.splitlines())
 
             return ToolResult.success_result(
@@ -156,6 +166,16 @@ class EditTool(Tool):
             path.write_text(new_content, encoding="utf-8")
         except IOError as e:
             return ToolResult.error_result(f"failed to write file: {e}")
+
+        # Record change for undo
+        if invocation.undo_tracker:
+            invocation.undo_tracker.record(
+                path=path,
+                old_content=old_content,
+                new_content=new_content,
+                tool_name=self.name,
+                is_new_file=False,
+            )
 
         old_lines = len(old_content.splitlines())
         new_lines = len(new_content.splitlines())

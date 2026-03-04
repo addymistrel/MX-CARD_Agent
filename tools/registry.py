@@ -72,6 +72,7 @@ class ToolRegistry:
         cwd: Path,
         hook_system: HookSystem,
         approval_manager: ApprovalManager | None = None,
+        undo_tracker: Any | None = None,
     ) -> ToolResult:
         tool = self.get(name)
         if tool is None:
@@ -100,6 +101,7 @@ class ToolRegistry:
         invocation = ToolInvocation(
             params=params,
             cwd=cwd,
+            undo_tracker=undo_tracker,
         )
         if approval_manager:
             confirmation = await tool.get_confirmation(invocation)

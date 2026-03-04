@@ -14,6 +14,7 @@ from safety.approval import ApprovalManager
 from tools.discovery import ToolDiscoveryManager
 from tools.mcp.mcp_manager import MCPManager
 from tools.registry import create_default_registry
+from utils.undo import UndoTracker
 
 
 class Session:
@@ -34,6 +35,7 @@ class Session:
         )
         self.loop_detector = LoopDetector()
         self.hook_system = HookSystem(config)
+        self.undo_tracker = UndoTracker()
         self.session_id = str(uuid.uuid4())
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
