@@ -51,20 +51,20 @@ pip install -r requirements.txt
 Create a `.env` file in the project root:
 
 ```env
-API_KEY=your-api-key-here
-BASE_URL=https://openrouter.ai/api/v1
+MX_CARD_API_KEY=your-api-key-here
+MX_CARD_BASE_URL=https://openrouter.ai/api/v1
 ```
 
 Or export them directly in your shell:
 
 ```bash
 # Linux / macOS
-export API_KEY="your-api-key-here"
-export BASE_URL="https://openrouter.ai/api/v1"
+export MX_CARD_API_KEY="your-api-key-here"
+export MX_CARD_BASE_URL="https://openrouter.ai/api/v1"
 
 # Windows (PowerShell)
-$env:API_KEY = "your-api-key-here"
-$env:BASE_URL = "https://openrouter.ai/api/v1"
+$env:MX_CARD_API_KEY = "your-api-key-here"
+$env:MX_CARD_BASE_URL = "https://openrouter.ai/api/v1"
 ```
 
 ---
@@ -768,8 +768,8 @@ The agent reads this file on startup and follows the instructions throughout the
 
 | Variable | Required | Description |
 |---|---|---|
-| `API_KEY` | ✅ | API key for the LLM provider |
-| `BASE_URL` | ✅ | Base URL for the LLM API endpoint |
+| `MX_CARD_API_KEY` | ✅ | API key for the LLM provider |
+| `MX_CARD_BASE_URL` | ✅ | Base URL for the LLM API endpoint |
 
 These can be set in a `.env` file (loaded automatically via `python-dotenv`) or as system environment variables.
 
@@ -875,9 +875,9 @@ The agent stores this in `memory`, and in future sessions it will use pytest whe
 
 ### "No API key found"
 
-Set the `API_KEY` environment variable in your `.env` file or shell:
+Set the `MX_CARD_API_KEY` environment variable in your `.env` file or shell:
 ```bash
-API_KEY=your-key-here
+MX_CARD_API_KEY=your-key-here
 ```
 
 ### "Working directory does not exist"

@@ -163,7 +163,7 @@ class CLI:
                     console.print(
                         f"[success]Approval policy changed to: {cmd_args} [/success]"
                     )
-                except:
+                except Exception:
                     console.print(
                         f"[error]Incorrect approval policy: {cmd_args} [/error]"
                     )
@@ -332,28 +332,37 @@ def main(
     cwd: Path | None,
 ):
     try:
-        config = load_config(cwd=cwd)
-    except Exception as e:
-        console.print(f"[error]Configuration Error: {e}[/error]")
-        sys.exit(1)
-
-    errors = config.validate()
-
-    if errors:
-        for error in errors:
-            console.print(f"[error]{error}[/error]")
-
-        sys.exit(1)
-
-    cli = CLI(config)
-
-    # messages = [{"role": "user", "content": prompt}]
-    if prompt:
-        result = asyncio.run(cli.run_single(prompt))
-        if result is None:
+        try:
+            config = load_config(cwd=cwd)
+        except Exception as e:
+            console.print(f"[error]Configuration Error: {e}[/error]")
             sys.exit(1)
-    else:
-        asyncio.run(cli.run_interactive())
+
+        errors = config.validate()
+
+        if errors:
+            for error in errors:
+                console.print(f"[error]{error}[/error]")
+
+            sys.exit(1)
+
+        cli = CLI(config)
+
+        # messages = [{"role": "user", "content": prompt}]
+        if prompt:
+            result = asyncio.run(cli.run_single(prompt))
+            if result is None:
+                sys.exit(1)
+        else:
+            asyncio.run(cli.run_interactive())
+    except KeyboardInterrupt:
+        console.print("\n[dim]Interrupted. Goodbye![/dim]")
+        sys.exit(0)
+    except Exception as e:
+        console.print(f"\n[error]Fatal error: {e}[/error]")
+        import traceback
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        sys.exit(1)
 
 
 main()

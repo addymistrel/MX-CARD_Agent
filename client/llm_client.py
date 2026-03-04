@@ -77,8 +77,8 @@ class LLMClient:
                     async for event in self._stream_response(client, kwargs):
                         yield event
                 else:
-                    event = await self._non_stream_response(client, kwargs)
-                    yield event
+                    async for event in self._non_stream_response(client, kwargs):
+                        yield event
                 return
             except RateLimitError as e:
                 if attempt < self._max_retries:
@@ -202,7 +202,9 @@ class LLMClient:
         self,
         client: AsyncOpenAI,
         kwargs: dict[str, Any],
-    ) -> StreamEvent:
+    ) -> AsyncGenerator[StreamEvent, None]:
+        kwargs.pop("stream", None)
+        kwargs["stream"] = False
         response = await client.chat.completions.create(**kwargs)
         choice = response.choices[0]
         message = choice.message
@@ -210,16 +212,21 @@ class LLMClient:
         text_delta = None
         if message.content:
             text_delta = TextDelta(content=message.content)
+            yield StreamEvent(
+                type=StreamEventType.TEXT_DELTA,
+                text_delta=text_delta,
+            )
 
-        tool_calls: list[ToolCall] = []
         if message.tool_calls:
             for tc in message.tool_calls:
-                tool_calls.append(
-                    ToolCall(
-                        call_id=tc.id,
-                        name=tc.function.name,
-                        arguments=parse_tool_call_arguments(tc.function.arguments),
-                    )
+                tool_call = ToolCall(
+                    call_id=tc.id,
+                    name=tc.function.name,
+                    arguments=parse_tool_call_arguments(tc.function.arguments),
+                )
+                yield StreamEvent(
+                    type=StreamEventType.TOOL_CALL_COMPLETE,
+                    tool_call=tool_call,
                 )
 
         usage = None
@@ -235,7 +242,7 @@ class LLMClient:
                 ),
             )
 
-        return StreamEvent(
+        yield StreamEvent(
             type=StreamEventType.MESSAGE_COMPLETE,
             text_delta=text_delta,
             finish_reason=choice.finish_reason,

@@ -1,12 +1,26 @@
 from pathlib import Path
 
 
-def resolve_path(base: str | Path, path: str | Path):
-    path = Path(path)
-    if path.is_absolute():
-        return path.resolve()
+class PathTraversalError(ValueError):
+    """Raised when a resolved path escapes the allowed working directory."""
+    pass
 
-    return Path(base).resolve() / path
+
+def resolve_path(base: str | Path, path: str | Path, allow_absolute: bool = False):
+    base = Path(base).resolve()
+    path = Path(path)
+
+    if path.is_absolute():
+        resolved = path.resolve()
+    else:
+        resolved = (base / path).resolve()
+
+    if not allow_absolute and not resolved.is_relative_to(base):
+        raise PathTraversalError(
+            f"Path '{path}' resolves to '{resolved}' which is outside the working directory '{base}'"
+        )
+
+    return resolved
 
 
 def display_path_rel_to_cwd(path: str, cwd: Path | None) -> str:
