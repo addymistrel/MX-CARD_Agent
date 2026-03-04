@@ -552,6 +552,8 @@ class TUI:
 - `/help` - Show this help
 - `/exit` or `/quit` - Exit the agent
 - `/clear` - Clear conversation history
+- `/undo` - Undo the last file change
+- `/undolist` - Show recent file changes
 - `/config` - Show current configuration
 - `/model <name>` - Change the model
 - `/approval <mode>` - Change approval mode

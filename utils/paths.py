@@ -6,21 +6,36 @@ class PathTraversalError(ValueError):
     pass
 
 
-def resolve_path(base: str | Path, path: str | Path, allow_absolute: bool = False):
+def resolve_path(base: str | Path, path: str | Path):
+    """Resolve a path against a base directory. Allows absolute paths for system-wide access."""
     base = Path(base).resolve()
     path = Path(path)
 
     if path.is_absolute():
-        resolved = path.resolve()
+        return path.resolve()
+
+    return (base / path).resolve()
+
+
+def is_within_directory(path: Path, directory: Path) -> bool:
+    """Check if a resolved path is within a given directory."""
+    try:
+        return path.resolve().is_relative_to(directory.resolve())
+    except (ValueError, OSError):
+        return False
+
+
+def is_system_drive(path: Path) -> bool:
+    """Check if a path is on the system drive (C:\\ on Windows, / system dirs on Unix)."""
+    import sys
+    resolved = path.resolve()
+
+    if sys.platform == "win32":
+        drive = resolved.drive.upper()
+        return drive == "C:"
     else:
-        resolved = (base / path).resolve()
-
-    if not allow_absolute and not resolved.is_relative_to(base):
-        raise PathTraversalError(
-            f"Path '{path}' resolves to '{resolved}' which is outside the working directory '{base}'"
-        )
-
-    return resolved
+        system_dirs = ("/bin", "/sbin", "/usr", "/etc", "/boot", "/lib", "/var", "/sys", "/proc")
+        return any(str(resolved).startswith(d) for d in system_dirs)
 
 
 def display_path_rel_to_cwd(path: str, cwd: Path | None) -> str:

@@ -141,6 +141,44 @@ class CLI:
             ctx.clear()
             self.agent.session.loop_detector.clear()
             console.print("[success]Conversation cleared [/success]")
+        elif cmd_name == "/undo":
+            tracker = self.agent.session.undo_tracker
+            if not tracker.has_changes:
+                console.print("[warning]Nothing to undo[/warning]")
+            else:
+                last = tracker.last_change
+                if last:
+                    console.print(
+                        f"\n[bold]Last change:[/bold] {last.summary}"
+                    )
+                    console.print(f"  Path: {last.display_path}")
+                    console.print(
+                        f"  Time: {last.timestamp.strftime('%H:%M:%S')}"
+                    )
+                    response = console.input(
+                        "\n[bold]Undo this change? (y/n):[/bold] "
+                    ).strip()
+                    if response.lower() in {"y", "yes"}:
+                        success, message = tracker.undo_last()
+                        if success:
+                            console.print(f"[success]{message}[/success]")
+                        else:
+                            console.print(f"[error]{message}[/error]")
+                    else:
+                        console.print("[dim]Undo cancelled[/dim]")
+        elif cmd_name == "/undolist":
+            tracker = self.agent.session.undo_tracker
+            changes = tracker.list_recent(10)
+            if not changes:
+                console.print("[dim]No file changes recorded[/dim]")
+            else:
+                console.print(f"\n[bold]Recent file changes ({len(changes)})[/bold]")
+                for i, change in enumerate(changes, 1):
+                    action = "Created" if change.is_new_file else "Modified"
+                    console.print(
+                        f"  {i}. [{change.timestamp.strftime('%H:%M:%S')}] "
+                        f"{action} {change.display_path} ({change.tool_name})"
+                    )
         elif command == "/config":
             console.print("\n[bold]Current Configuration[/bold]")
             console.print(f"  Model: {self.config.model_name}")
@@ -270,6 +308,19 @@ class CLI:
             )
             checkpoint_id = persistence_manager.save_checkpoint(session_snapshot)
             console.print(f"[success]Checkpoint created: {checkpoint_id}[/success]")
+        elif cmd_name == "/checkpoints":
+            persistence_manager = PersistenceManager()
+            checkpoints = persistence_manager.list_checkpoints()
+            if not checkpoints:
+                console.print("[dim]No checkpoints found[/dim]")
+            else:
+                console.print(f"\n[bold]Checkpoints ({len(checkpoints)})[/bold]")
+                for cp in checkpoints:
+                    console.print(
+                        f"  • {cp['checkpoint_id']}  "
+                        f"(turns: {cp['turn_count']}, created: {cp['created_at']})"
+                    )
+                console.print("\n[dim]Use /restore <checkpoint_id> to restore[/dim]")
         elif cmd_name == "/restore":
             if not cmd_args:
                 console.print(f"[error]Usage: /restore <checkpoint_id> [/error]")

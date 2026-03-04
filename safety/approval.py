@@ -6,6 +6,7 @@ from typing import Any, Awaitable, Callable
 from config.config import ApprovalPolicy
 from constants.safety import DANGEROUS_COMMAND_PATTERNS, SAFE_COMMAND_PATTERNS
 from tools.base import ToolConfirmation
+from utils.paths import is_system_drive
 
 
 class ApprovalDecision(str, Enum):
@@ -86,6 +87,11 @@ class ApprovalManager:
             decision = self._assess_command_safety(context.command)
             if decision != ApprovalDecision.NEEDS_CONFIRMATION:
                 return decision
+
+        # Always require confirmation for writes to system drive (C:\ or /usr, /etc, etc.)
+        for path in context.affected_paths:
+            if is_system_drive(path):
+                return ApprovalDecision.NEEDS_CONFIRMATION
 
         for path in context.affected_paths:
             if not path.is_relative_to(self.cwd):
