@@ -1,5 +1,8 @@
 import asyncio
+import base64
+import hashlib
 import os
+import shutil
 from pathlib import Path
 import sys
 import click
@@ -12,50 +15,139 @@ if getattr(sys, "frozen", False):
 else:
     _app_dir = Path(__file__).resolve().parent
 
-# Load .env from the bundled/app directory first,
-# then from the user's cwd (so user can override if needed).
-load_dotenv(_app_dir / ".env")
-load_dotenv()
+
+# ── Encrypt / Decrypt helpers (frozen exe only) ──────────────────────────────
+_ENC_KEY = b"MxC4rd@g3nt!2026#SecureK3y$"
 
 
-def _ensure_on_path() -> None:
-    """On first run of the frozen exe, offer to add its directory to the user PATH."""
+def _derive_key(key: bytes, length: int) -> bytes:
+    """Stretch the key to match data length using repeated SHA-256 hashing."""
+    result = b""
+    counter = 0
+    while len(result) < length:
+        result += hashlib.sha256(key + counter.to_bytes(4, "big")).digest()
+        counter += 1
+    return result[:length]
+
+
+def _encrypt_bytes(data: bytes) -> bytes:
+    """Encrypt data with XOR cipher and return base64-encoded result."""
+    key_stream = _derive_key(_ENC_KEY, len(data))
+    encrypted = bytes(a ^ b for a, b in zip(data, key_stream))
+    return base64.b64encode(encrypted)
+
+
+def _decrypt_bytes(encoded: bytes) -> bytes:
+    """Decrypt base64-encoded XOR-ciphered data."""
+    encrypted = base64.b64decode(encoded)
+    key_stream = _derive_key(_ENC_KEY, len(encrypted))
+    return bytes(a ^ b for a, b in zip(encrypted, key_stream))
+
+
+def _load_encrypted_env(path: Path) -> bool:
+    """Read an encrypted .env.enc file, decrypt it, and set env vars."""
+    if not path.is_file():
+        return False
+    try:
+        raw = path.read_bytes()
+        decrypted = _decrypt_bytes(raw).decode("utf-8")
+        for line in decrypted.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, _, value = line.partition("=")
+                key, value = key.strip(), value.strip()
+                # Don't override vars already set (cwd .env has priority)
+                if key and key not in os.environ:
+                    os.environ[key] = value
+        return True
+    except Exception:
+        return False
+
+
+# ── .env loading ─────────────────────────────────────────────────────────────
+# DEVELOPMENT: just load .env from project root / cwd as usual.
+# FROZEN EXE:
+#   1. cwd/.env              — project-level override (plain text, dev use)
+#   2. exe-dir/.env.enc      — encrypted env next to global exe
+#   3. bundled/.env          — baked into exe at build time (_MEIPASS)
+
+load_dotenv()  # cwd — always (plain text)
+
+if getattr(sys, "frozen", False):
+    _exe_dir = Path(sys.executable).resolve().parent
+    _load_encrypted_env(_exe_dir / ".env.enc")   # encrypted, next to exe
+    load_dotenv(_app_dir / ".env")               # bundled fallback
+else:
+    load_dotenv(_app_dir / ".env")               # project root
+
+
+# ── Global install: copy exe + encrypted .env to AppData, add to PATH ────────
+_GLOBAL_BIN_DIR = Path(os.environ.get("LOCALAPPDATA", "")) / "mx-card-agent" / "bin"
+
+
+def _ensure_global_install() -> None:
+    """
+    On first run of the frozen exe, copy it into a permanent location under
+    AppData, encrypt the bundled .env and store it as .env.enc, then add
+    that location to the user PATH.
+
+    The API key is never stored as plain text on disk.
+    """
     if not getattr(sys, "frozen", False) or sys.platform != "win32":
         return
 
-    exe_dir = str(Path(sys.executable).resolve().parent)
+    exe_path = Path(sys.executable).resolve()
+    global_exe = _GLOBAL_BIN_DIR / "mxcardagent.exe"
+    global_env_enc = _GLOBAL_BIN_DIR / ".env.enc"
+    global_env_raw = _GLOBAL_BIN_DIR / ".env"      # clean up old plain-text
+    bundled_env = _app_dir / ".env"
 
-    # Check if already on PATH
+    already_global = exe_path == global_exe
+
+    if not already_global:
+        try:
+            _GLOBAL_BIN_DIR.mkdir(parents=True, exist_ok=True)
+
+            # Copy exe (only if newer or not present)
+            if not global_exe.exists() or exe_path.stat().st_mtime > global_exe.stat().st_mtime:
+                print(f"\n  Installing to: {_GLOBAL_BIN_DIR}")
+                shutil.copy2(str(exe_path), str(global_exe))
+                print(f"  ✓ Copied mxcardagent.exe")
+
+            # Encrypt .env from bundle and write as .env.enc
+            if bundled_env.is_file():
+                plain = bundled_env.read_bytes()
+                global_env_enc.write_bytes(_encrypt_bytes(plain))
+                print(f"  ✓ Stored encrypted .env.enc")
+
+            # Remove any old plain-text .env left from a previous version
+            if global_env_raw.is_file():
+                global_env_raw.unlink()
+
+        except OSError as e:
+            print(f"\n  ✗ Could not install globally: {e}")
+            print(f"    You can manually copy mxcardagent.exe to a folder on your PATH.\n")
+            return
+
+    # Ensure the global bin dir is on PATH
+    _ensure_on_path(str(_GLOBAL_BIN_DIR))
+
+
+def _ensure_on_path(target_dir: str) -> None:
+    """Add target_dir to user PATH if not already there."""
     user_path = _get_user_path()
     if user_path is not None:
-        dirs = [d.strip().rstrip("\\") for d in user_path.split(";") if d.strip()]
-        if exe_dir.rstrip("\\").lower() in [d.lower() for d in dirs]:
+        dirs = [d.strip().rstrip("\\").lower() for d in user_path.split(";") if d.strip()]
+        if target_dir.rstrip("\\").lower() in dirs:
             return  # already on PATH
 
-    # Check for a sentinel so we only ask once per location
-    sentinel = Path(exe_dir) / ".path_configured"
-    if sentinel.exists():
-        return
-
-    print(f"\n  The directory containing mxcardagent.exe is not on your PATH.")
-    print(f"  Directory: {exe_dir}\n")
-    answer = input("  Add it to your PATH so you can run 'mxcardagent' from any terminal? [Y/n] ").strip().lower()
-
-    if answer in ("", "y", "yes"):
-        if _add_to_user_path(exe_dir):
-            print(f"\n  ✓ Added to PATH. Restart your terminal to use 'mxcardagent' from anywhere.\n")
-        else:
-            print(f"\n  ✗ Could not update PATH automatically.")
-            print(f"    Manually add this directory to your PATH: {exe_dir}\n")
+    if _add_to_user_path(target_dir):
+        print(f"  ✓ Added to PATH. Restart your terminal to use 'mxcardagent' from anywhere.\n")
     else:
-        print(f"\n  Skipped. You can manually add this directory to your PATH later:")
-        print(f"    {exe_dir}\n")
-
-    # Write sentinel so we don't ask again for this location
-    try:
-        sentinel.write_text("configured")
-    except OSError:
-        pass
+        print(f"\n  ✗ Could not update PATH automatically.")
+        print(f"    Manually add this directory to your PATH: {target_dir}\n")
 
 
 def _get_user_path() -> str | None:
@@ -479,8 +571,8 @@ def main(
     prompt: str | None,
     cwd: Path | None,
 ):
-    # On first run of the frozen exe, offer to add to PATH
-    _ensure_on_path()
+    # On first run of the frozen exe, install globally and add to PATH
+    _ensure_global_install()
 
     try:
         try:
