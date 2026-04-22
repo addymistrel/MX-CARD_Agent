@@ -68,11 +68,11 @@ def _load_encrypted_env(path: Path) -> bool:
 # ── .env loading ─────────────────────────────────────────────────────────────
 # DEVELOPMENT: just load .env from project root / cwd as usual.
 # FROZEN EXE:
-#   1. cwd/.env              — project-level override (plain text, dev use)
-#   2. exe-dir/.env.enc      — encrypted env next to global exe
-#   3. bundled/.env          — baked into exe at build time (_MEIPASS)
+#   1. cwd/.env              - project-level override (plain text, dev use)
+#   2. exe-dir/.env.enc      - encrypted env next to global exe
+#   3. bundled/.env          - baked into exe at build time (_MEIPASS)
 
-load_dotenv()  # cwd — always (plain text)
+load_dotenv()  # cwd - always (plain text)
 
 if getattr(sys, "frozen", False):
     _exe_dir = Path(sys.executable).resolve().parent

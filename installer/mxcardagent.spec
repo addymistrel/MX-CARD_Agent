@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec for mxcardagent.exe — single self-contained exe.
+PyInstaller spec for mxcardagent.exe - single self-contained exe.
 
 Bundles EVERYTHING:
   - main.py + all source modules
@@ -71,7 +71,7 @@ for pkg in METADATA_PACKAGES:
     try:
         datas += copy_metadata(pkg)
     except Exception:
-        pass  # package not installed or no metadata — skip
+        pass  # package not installed or no metadata - skip
 
 # ── Hidden imports ───────────────────────────────────────────────────────────
 # PyInstaller can't always detect dynamic imports. List them explicitly.

@@ -1,0 +1,42 @@
+[
+  {
+    "icon": "terminal",
+    "title": "Autonomous Shell Execution",
+    "description": "Run shell commands directly from prompts. The agent handles bash, PowerShell, and cmd - with built-in timeout and safety controls."
+  },
+  {
+    "icon": "file-edit",
+    "title": "Surgical File Editing",
+    "description": "Read, write, and perform precise find-and-replace edits across your codebase with exact string matching - no accidental overwrites."
+  },
+  {
+    "icon": "brain",
+    "title": "Context-Aware Reasoning",
+    "description": "Automatic context compaction and loop detection keep the agent focused, preventing repetitive actions and token waste."
+  },
+  {
+    "icon": "shield-check",
+    "title": "Configurable Safety Policies",
+    "description": "Choose from suggest, auto-edit, or full-auto approval modes. Command-level allow/deny lists keep destructive operations in check."
+  },
+  {
+    "icon": "plug",
+    "title": "MCP Tool Integration",
+    "description": "Connect external tools via the Model Context Protocol (MCP). Add custom capabilities through stdio or SSE-based servers."
+  },
+  {
+    "icon": "git-branch",
+    "title": "Session Persistence & Undo",
+    "description": "Save, resume, and checkpoint sessions. Every file change is tracked with automatic undo support - roll back any edit instantly."
+  },
+  {
+    "icon": "search",
+    "title": "Glob & Grep Search",
+    "description": "Find files by pattern and search contents with regex. Navigate massive codebases with precision using built-in glob and grep tools."
+  },
+  {
+    "icon": "layout-grid",
+    "title": "Sub-Agent Architecture",
+    "description": "Delegate complex subtasks to specialized sub-agents. Each runs in its own context for parallel, focused problem-solving."
+  }
+]

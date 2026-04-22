@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Sarah Chen",
+    "role": "Senior Developer at TechCorp",
+    "avatar": "SC",
+    "content": "MX-CARD Agent has completely transformed my workflow. What used to take hours of manual coding and debugging now happens in minutes. The autonomous shell execution is a game-changer.",
+    "rating": 5
+  },
+  {
+    "name": "James Rodriguez",
+    "role": "DevOps Engineer at CloudScale",
+    "avatar": "JR",
+    "content": "The MCP integration is brilliant. I've connected our internal tools and now the agent can deploy, monitor, and fix issues across our entire infrastructure autonomously.",
+    "rating": 5
+  },
+  {
+    "name": "Emily Watson",
+    "role": "Freelance Full-Stack Developer",
+    "avatar": "EW",
+    "content": "I was skeptical about AI coding agents, but MX-CARD won me over. The safety policies give me confidence to let it work autonomously, and the undo feature is a lifesaver.",
+    "rating": 4
+  },
+  {
+    "name": "Alex Kim",
+    "role": "CTO at StartupLab",
+    "avatar": "AK",
+    "content": "We've rolled out MX-CARD Agent across our entire engineering team. Productivity is up 40%. The session persistence means context is never lost between coding sessions.",
+    "rating": 5
+  }
+]

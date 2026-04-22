@@ -1,5 +1,5 @@
 """
-MX-CARD Agent — Installer / Uninstaller
+MX-CARD Agent - Installer / Uninstaller
 Builds into a standalone .exe via PyInstaller.
 
 When run normally   → installs mxcagent.exe + adds to PATH
@@ -154,7 +154,7 @@ def get_bundled_env_path():
 def do_install():
     print()
     print("=" * 60)
-    print("  MX-CARD Agent — Installer")
+    print("  MX-CARD Agent - Installer")
     print("=" * 60)
     print()
 
@@ -195,7 +195,7 @@ def do_install():
         if os.path.isfile(plain_env):
             os.remove(plain_env)
     else:
-        print("  WARNING: .env not found — no API keys stored!")
+        print("  WARNING: .env not found - no API keys stored!")
     print()
 
     # 5. Copy self as uninstaller
@@ -248,7 +248,7 @@ def do_install():
 def do_uninstall():
     print()
     print("=" * 60)
-    print("  MX-CARD Agent — Uninstaller")
+    print("  MX-CARD Agent - Uninstaller")
     print("=" * 60)
     print()
     print("  This will completely remove MX-CARD Agent from your")

@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-::  MX-CARD Agent — Build Script
+::  MX-CARD Agent - Build Script
 ::  Step 1: Builds mxcardagent.exe (the agent)
 ::  Step 2: Builds mxcagent-installer.exe (installer + uninstaller)
 ::
@@ -13,7 +13,7 @@ setlocal EnableDelayedExpansion
 
 echo.
 echo ============================================================
-echo   MX-CARD Agent — Build Script
+echo   MX-CARD Agent - Build Script
 echo ============================================================
 echo.
 
@@ -78,7 +78,7 @@ if not exist "%SCRIPT_DIR%\dist\mxcardagent.exe" (
     goto :error
 )
 echo.
-for %%A in ("%SCRIPT_DIR%\dist\mxcardagent.exe") do echo        mxcardagent.exe — %%~zA bytes
+for %%A in ("%SCRIPT_DIR%\dist\mxcardagent.exe") do echo        mxcardagent.exe - %%~zA bytes
 echo.
 
 :: ── Build the installer exe ─────────────────────────────────
@@ -98,7 +98,7 @@ if not exist "%SCRIPT_DIR%\dist\mxcagent-installer.exe" (
     goto :error
 )
 echo.
-for %%A in ("%SCRIPT_DIR%\dist\mxcagent-installer.exe") do echo        mxcagent-installer.exe — %%~zA bytes
+for %%A in ("%SCRIPT_DIR%\dist\mxcagent-installer.exe") do echo        mxcagent-installer.exe - %%~zA bytes
 echo.
 
 :: ── Done ─────────────────────────────────────────────────────

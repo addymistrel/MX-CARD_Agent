@@ -1,4 +1,4 @@
-# 📘 HOW TO USE — MX-CARD Agent
+# 📘 HOW TO USE - MX-CARD Agent
 
 A comprehensive guide covering **every feature, command, tool, and configuration option** of the MX-CARD AI Agent.
 
@@ -192,15 +192,15 @@ Saved Sessions
 
 ## 6. Built-in Tools
 
-The agent has access to a suite of built-in tools it uses autonomously to accomplish your tasks. You don't invoke these directly — the agent decides when and how to use them based on your prompt.
+The agent has access to a suite of built-in tools it uses autonomously to accomplish your tasks. You don't invoke these directly - the agent decides when and how to use them based on your prompt.
 
-### 📄 `read_file` — Read File Contents
+### 📄 `read_file` - Read File Contents
 
 Reads the contents of a text file with line numbers. Supports reading specific portions of large files.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `path` | string | ✅ | — | File path (relative or absolute) |
+| `path` | string | ✅ | - | File path (relative or absolute) |
 | `offset` | int | ❌ | `1` | Line number to start from (1-based) |
 | `limit` | int | ❌ | All | Max number of lines to read |
 
@@ -210,27 +210,27 @@ Reads the contents of a text file with line numbers. Supports reading specific p
 
 ---
 
-### ✏️ `write_file` — Create or Overwrite a File
+### ✏️ `write_file` - Create or Overwrite a File
 
 Writes content to a file. Creates the file (and parent directories) if it doesn't exist, or overwrites if it does.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `path` | string | ✅ | — | File path (relative or absolute) |
-| `content` | string | ✅ | — | Content to write |
+| `path` | string | ✅ | - | File path (relative or absolute) |
+| `content` | string | ✅ | - | Content to write |
 | `create_directories` | bool | ❌ | `true` | Auto-create parent directories |
 
 ---
 
-### 🔧 `edit` — Surgical Text Replacement
+### 🔧 `edit` - Surgical Text Replacement
 
 Edit a file by finding and replacing exact text. The `old_string` must match exactly (including whitespace/indentation).
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `path` | string | ✅ | — | File path |
+| `path` | string | ✅ | - | File path |
 | `old_string` | string | ❌ | `""` | Exact text to find and replace (empty = create new file) |
-| `new_string` | string | ✅ | — | Replacement text |
+| `new_string` | string | ✅ | - | Replacement text |
 | `replace_all` | bool | ❌ | `false` | Replace all occurrences |
 
 - If `old_string` is empty and the file doesn't exist, a new file is created.
@@ -238,13 +238,13 @@ Edit a file by finding and replacing exact text. The `old_string` must match exa
 
 ---
 
-### 💻 `shell` — Execute Shell Commands
+### 💻 `shell` - Execute Shell Commands
 
 Runs shell commands on the system. Uses `bash` on Linux/macOS and `cmd.exe` on Windows.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `command` | string | ✅ | — | The shell command to run |
+| `command` | string | ✅ | - | The shell command to run |
 | `timeout` | int | ❌ | `120` | Timeout in seconds (1–600) |
 | `cwd` | string | ❌ | Working dir | Working directory for the command |
 
@@ -261,7 +261,7 @@ Runs shell commands on the system. Uses `bash` on Linux/macOS and `cmd.exe` on W
 
 ---
 
-### 📂 `list_dir` — List Directory Contents
+### 📂 `list_dir` - List Directory Contents
 
 Lists the contents of a directory, sorted with directories first.
 
@@ -272,13 +272,13 @@ Lists the contents of a directory, sorted with directories first.
 
 ---
 
-### 🔍 `grep` — Search File Contents with Regex
+### 🔍 `grep` - Search File Contents with Regex
 
 Searches for a regular expression pattern across files. Returns matching lines with file paths and line numbers.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `pattern` | string | ✅ | — | Regex pattern to search for |
+| `pattern` | string | ✅ | - | Regex pattern to search for |
 | `path` | string | ❌ | `.` (current dir) | File or directory to search in |
 | `case_insensitive` | bool | ❌ | `false` | Case-insensitive search |
 
@@ -288,77 +288,77 @@ Searches for a regular expression pattern across files. Returns matching lines w
 
 ---
 
-### 🌐 `glob` — Find Files by Pattern
+### 🌐 `glob` - Find Files by Pattern
 
 Finds files matching a glob pattern. Supports `**` for recursive matching.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `pattern` | string | ✅ | — | Glob pattern (e.g., `**/*.py`) |
+| `pattern` | string | ✅ | - | Glob pattern (e.g., `**/*.py`) |
 | `path` | string | ❌ | `.` (current dir) | Directory to search in |
 
 - Returns up to **1,000** results.
 
 ---
 
-### 🌍 `web_search` — Search the Web
+### 🌍 `web_search` - Search the Web
 
 Searches the web using DuckDuckGo and returns results with titles, URLs, and snippets.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `query` | string | ✅ | — | Search query |
+| `query` | string | ✅ | - | Search query |
 | `max_results` | int | ❌ | `10` | Max results to return (1–20) |
 
 ---
 
-### 🔗 `web_fetch` — Fetch Web Page Content
+### 🔗 `web_fetch` - Fetch Web Page Content
 
 Fetches the content of a URL and returns the response body as text.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `url` | string | ✅ | — | URL to fetch (http/https only) |
+| `url` | string | ✅ | - | URL to fetch (http/https only) |
 | `timeout` | int | ❌ | `30` | Request timeout in seconds (5–120) |
 
 - Content is truncated at **100 KB**.
 
 ---
 
-### 🧠 `memory` — Persistent Memory Store
+### 🧠 `memory` - Persistent Memory Store
 
 Stores and retrieves persistent key-value data across sessions. Saved to `user_memory.json` in the app's data directory.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `action` | string | ✅ | — | `set`, `get`, `delete`, `list`, or `clear` |
-| `key` | string | ❌ | — | Memory key (required for set/get/delete) |
-| `value` | string | ❌ | — | Value to store (required for set) |
+| `action` | string | ✅ | - | `set`, `get`, `delete`, `list`, or `clear` |
+| `key` | string | ❌ | - | Memory key (required for set/get/delete) |
+| `value` | string | ❌ | - | Value to store (required for set) |
 
 **Actions:**
-- `set` — Store a key-value pair
-- `get` — Retrieve a value by key
-- `delete` — Remove a key
-- `list` — List all stored memories
-- `clear` — Clear all memories
+- `set` - Store a key-value pair
+- `get` - Retrieve a value by key
+- `delete` - Remove a key
+- `list` - List all stored memories
+- `clear` - Clear all memories
 
 ---
 
-### ✅ `todos` — Task List Management
+### ✅ `todos` - Task List Management
 
 Tracks multi-step tasks within the current session. Useful for complex, multi-step workflows.
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `action` | string | ✅ | — | `add`, `complete`, `list`, or `clear` |
-| `id` | string | ❌ | — | Todo ID (required for `complete`) |
-| `content` | string | ❌ | — | Todo description (required for `add`) |
+| `action` | string | ✅ | - | `add`, `complete`, `list`, or `clear` |
+| `id` | string | ❌ | - | Todo ID (required for `complete`) |
+| `content` | string | ❌ | - | Todo description (required for `add`) |
 
 **Actions:**
-- `add` — Add a new task (auto-generates a unique ID)
-- `complete` — Mark a task as done by ID
-- `list` — Show all pending tasks
-- `clear` — Remove all tasks
+- `add` - Add a new task (auto-generates a unique ID)
+- `complete` - Mark a task as done by ID
+- `list` - Show all pending tasks
+- `clear` - Remove all tasks
 
 ---
 
@@ -366,14 +366,14 @@ Tracks multi-step tasks within the current session. Useful for complex, multi-st
 
 Subagents are **specialized, isolated AI agents** that run within the main agent to perform focused tasks. They have limited tool access and isolated context.
 
-### 🕵️ `subagent_codebase_investigator` — Codebase Investigator
+### 🕵️ `subagent_codebase_investigator` - Codebase Investigator
 
 Explores and analyzes code to answer questions about code structure, patterns, and implementations.
 
 - **Allowed tools:** `read_file`, `grep`, `glob`, `list_dir`
 - **Max turns:** 20
 - **Timeout:** 600 seconds (10 minutes)
-- **Read-only** — does NOT modify any files
+- **Read-only** - does NOT modify any files
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
@@ -381,14 +381,14 @@ Explores and analyzes code to answer questions about code structure, patterns, a
 
 ---
 
-### 📝 `subagent_code_reviewer` — Code Reviewer
+### 📝 `subagent_code_reviewer` - Code Reviewer
 
 Reviews code and provides feedback on quality, bugs, security issues, and improvement opportunities.
 
 - **Allowed tools:** `read_file`, `grep`, `list_dir`
 - **Max turns:** 10
 - **Timeout:** 300 seconds (5 minutes)
-- **Read-only** — does NOT modify any files
+- **Read-only** - does NOT modify any files
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
@@ -433,11 +433,11 @@ startup_timeout_sec = 10
 | Option | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `enabled` | bool | ❌ | `true` | Enable/disable the server |
-| `command` | string | ❌* | — | Command to launch (stdio transport) |
+| `command` | string | ❌* | - | Command to launch (stdio transport) |
 | `args` | list[str] | ❌ | `[]` | Arguments for the command |
 | `env` | dict | ❌ | `{}` | Environment variables |
-| `cwd` | string | ❌ | — | Working directory for the process |
-| `url` | string | ❌* | — | URL for HTTP/SSE transport |
+| `cwd` | string | ❌ | - | Working directory for the process |
+| `url` | string | ❌* | - | URL for HTTP/SSE transport |
 | `startup_timeout_sec` | float | ❌ | `10` | Connection timeout in seconds |
 
 > \*Either `command` (stdio) or `url` (http/sse) must be provided, but not both.
@@ -491,7 +491,7 @@ hooks_enabled = false                            # Enable the hooks system
 developer_instructions = "Use TypeScript for all new files"
 user_instructions = "I prefer concise responses"
 
-# Restrict available tools (optional — omit to allow all)
+# Restrict available tools (optional - omit to allow all)
 # allowed_tools = ["read_file", "write_file", "edit", "shell", "grep"]
 
 # Shell Environment Policy
@@ -527,8 +527,8 @@ enabled = true
 | `max_turns` | int | `100` | Max agentic loop iterations |
 | `debug` | bool | `false` | Debug mode |
 | `hooks_enabled` | bool | `false` | Enable hooks system |
-| `developer_instructions` | string | — | Instructions for the agent (from project maintainer) |
-| `user_instructions` | string | — | Custom user instructions |
+| `developer_instructions` | string | - | Instructions for the agent (from project maintainer) |
+| `user_instructions` | string | - | Custom user instructions |
 | `allowed_tools` | list[str] | All tools | Restrict which tools are available |
 | `shell_environment.ignore_default_excludes` | bool | `false` | Bypass default env var filtering |
 | `shell_environment.exclude_patterns` | list[str] | `["*KEY*","*TOKEN*","*SECRET*"]` | Env var name patterns to exclude |
@@ -565,7 +565,7 @@ approval = "auto"
 
 ### Safety Features
 
-**Dangerous Command Detection** — The following patterns are always blocked (except in `yolo` mode):
+**Dangerous Command Detection** - The following patterns are always blocked (except in `yolo` mode):
 
 - `rm -rf /`, `rm -rf ~`, `rm -rf /*`
 - `dd if=/dev/zero`, `dd if=/dev/random`
@@ -575,7 +575,7 @@ approval = "auto"
 - Code execution from network (`curl ... | bash`, `wget ... | bash`)
 - Fork bombs
 
-**Safe Command Auto-Approval** — These commands are recognized as safe and auto-approved:
+**Safe Command Auto-Approval** - These commands are recognized as safe and auto-approved:
 
 - Info commands: `ls`, `dir`, `pwd`, `cat`, `head`, `tail`, `wc`, `find`, `which`, `file`, `stat`
 - Read-only git: `git status`, `git log`, `git diff`, `git show`, `git branch`
@@ -583,9 +583,9 @@ approval = "auto"
 - Text processing: `grep`, `awk`, `sed`, `cut`, `sort`, `uniq`, `diff`
 - System info: `date`, `whoami`, `hostname`, `uname`, `ps`, `top`
 
-**Path Safety** — File operations outside the working directory trigger additional confirmation prompts.
+**Path Safety** - File operations outside the working directory trigger additional confirmation prompts.
 
-**Environment Variable Filtering** — Sensitive environment variables matching `*KEY*`, `*TOKEN*`, `*SECRET*` are automatically stripped from the shell environment.
+**Environment Variable Filtering** - Sensitive environment variables matching `*KEY*`, `*TOKEN*`, `*SECRET*` are automatically stripped from the shell environment.
 
 ---
 
@@ -644,10 +644,10 @@ enabled = true
 
 | Option | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `name` | string | ✅ | — | Hook identifier |
-| `trigger` | string | ✅ | — | When to fire (`before_agent`, `after_agent`, `before_tool`, `after_tool`, `on_error`) |
-| `command` | string | ❌* | — | Shell command to run |
-| `script` | string | ❌* | — | Inline script content |
+| `name` | string | ✅ | - | Hook identifier |
+| `trigger` | string | ✅ | - | When to fire (`before_agent`, `after_agent`, `before_tool`, `after_tool`, `on_error`) |
+| `command` | string | ❌* | - | Shell command to run |
+| `script` | string | ❌* | - | Inline script content |
 | `timeout_sec` | float | ❌ | `30` | Execution timeout |
 | `enabled` | bool | ❌ | `true` | Enable/disable the hook |
 
@@ -704,8 +704,8 @@ This will make the loader read `<cwd>/.mx-card-agent/config.toml` and merge it o
 - **Linux:** `~/.local/share/mx-card-agent/`
 
 Subdirectories:
-- `sessions/` — Saved sessions (`<session_id>.json`)
-- `checkpoints/` — Checkpoints (`<session_id>_<timestamp>.json`)
+- `sessions/` - Saved sessions (`<session_id>.json`)
+- `checkpoints/` - Checkpoints (`<session_id>_<timestamp>.json`)
 
 Files are created with restricted permissions (`0o600`) for security.
 

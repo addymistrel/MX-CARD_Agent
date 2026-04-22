@@ -1,0 +1,17 @@
+[
+  {
+    "src": "https://placehold.co/800x500/7c3aed/ffffff?text=Interactive+Terminal+UI",
+    "alt": "MX-CARD Agent interactive terminal interface",
+    "caption": "Interactive Terminal - Chat with your AI agent directly in the terminal"
+  },
+  {
+    "src": "https://placehold.co/800x500/6d28d9/ffffff?text=Tool+Execution+View",
+    "alt": "MX-CARD Agent tool execution",
+    "caption": "Tool Execution - Watch the agent read, edit, and run commands in real-time"
+  },
+  {
+    "src": "https://placehold.co/800x500/5b21b6/ffffff?text=Session+Management",
+    "alt": "MX-CARD Agent session management",
+    "caption": "Session Management - Save, resume, and checkpoint your coding sessions"
+  }
+]
