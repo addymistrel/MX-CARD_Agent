@@ -5,7 +5,6 @@ import sys
 from typing import Any
 from config.config import Config
 from config.loader import get_config_dir
-from constants.app import APP_PROJECT_DIR
 from tools.base import Tool
 from tools.registry import ToolRegistry
 
@@ -44,7 +43,11 @@ class ToolDiscoveryManager:
         return tools
 
     def discover_from_directory(self, directory: Path) -> None:
-        tool_dir = directory / APP_PROJECT_DIR / "tools"
+        # Global custom tools live under the user's config dir:
+        #   <user_config_dir>/mx-card-agent/tools
+        # Per-project discovery via <cwd>/.mx-card-agent/tools is intentionally disabled
+        # to keep repos clean and make configuration global.
+        tool_dir = directory / "tools"
 
         if not tool_dir.exists() or not tool_dir.is_dir():
             return
@@ -67,5 +70,4 @@ class ToolDiscoveryManager:
                 continue
 
     def discover_all(self) -> None:
-        self.discover_from_directory(self.config.cwd)
         self.discover_from_directory(get_config_dir())
