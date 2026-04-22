@@ -3,7 +3,8 @@ setlocal EnableDelayedExpansion
 
 :: ============================================================
 ::  MX-CARD Agent — Build Script
-::  Builds a single mxcardagent.exe with everything baked in.
+::  Step 1: Builds mxcardagent.exe (the agent)
+::  Step 2: Builds mxcagent-installer.exe (installer + uninstaller)
 ::
 ::  Usage:
 ::    cd installer
@@ -27,7 +28,7 @@ echo.
 
 :: ── Check for .env ───────────────────────────────────────────
 
-echo [1/4] Checking for .env file...
+echo [1/5] Checking for .env file...
 if not exist "%PROJECT_ROOT%\.env" (
     echo [ERROR] .env file not found at %PROJECT_ROOT%\.env
     echo         The exe needs .env with your API key baked in.
@@ -38,7 +39,7 @@ echo.
 
 :: ── Check for PyInstaller ────────────────────────────────────
 
-echo [2/4] Checking for PyInstaller...
+echo [2/5] Checking for PyInstaller...
 pip show pyinstaller >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo        PyInstaller not found. Installing...
@@ -53,31 +54,52 @@ echo.
 
 :: ── Clean previous builds ────────────────────────────────────
 
-echo [3/4] Cleaning previous builds...
+echo [3/5] Cleaning previous builds...
 if exist "%SCRIPT_DIR%\dist" rmdir /s /q "%SCRIPT_DIR%\dist"
 if exist "%SCRIPT_DIR%\build" rmdir /s /q "%SCRIPT_DIR%\build"
 mkdir "%SCRIPT_DIR%\dist"
 echo        Clean.
 echo.
 
-:: ── Build the exe ────────────────────────────────────────────
+:: ── Build the agent exe ──────────────────────────────────────
 
-echo [4/4] Building mxcardagent.exe...
+echo [4/5] Building mxcardagent.exe (agent)...
 echo        This may take a few minutes...
 echo.
 pyinstaller "%SCRIPT_DIR%\mxcardagent.spec" --distpath "%SCRIPT_DIR%\dist" --workpath "%SCRIPT_DIR%\build" --noconfirm
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [ERROR] Build failed.
+    echo [ERROR] Agent build failed.
     goto :error
 )
-echo.
 
-:: Verify
 if not exist "%SCRIPT_DIR%\dist\mxcardagent.exe" (
     echo [ERROR] mxcardagent.exe not found after build.
     goto :error
 )
+echo.
+for %%A in ("%SCRIPT_DIR%\dist\mxcardagent.exe") do echo        mxcardagent.exe — %%~zA bytes
+echo.
+
+:: ── Build the installer exe ─────────────────────────────────
+
+echo [5/5] Building mxcagent-installer.exe (installer)...
+echo        Bundling agent exe inside installer...
+echo.
+pyinstaller "%SCRIPT_DIR%\installer.spec" --distpath "%SCRIPT_DIR%\dist" --workpath "%SCRIPT_DIR%\build\installer" --noconfirm
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [ERROR] Installer build failed.
+    goto :error
+)
+
+if not exist "%SCRIPT_DIR%\dist\mxcagent-installer.exe" (
+    echo [ERROR] mxcagent-installer.exe not found after build.
+    goto :error
+)
+echo.
+for %%A in ("%SCRIPT_DIR%\dist\mxcagent-installer.exe") do echo        mxcagent-installer.exe — %%~zA bytes
+echo.
 
 :: ── Done ─────────────────────────────────────────────────────
 
@@ -86,17 +108,15 @@ echo   BUILD SUCCESSFUL
 echo ============================================================
 echo.
 echo   Output:
-echo     %SCRIPT_DIR%\dist\mxcardagent.exe
+echo     %SCRIPT_DIR%\dist\mxcagent-installer.exe
 echo.
-for %%A in ("%SCRIPT_DIR%\dist\mxcardagent.exe") do echo   Size: %%~zA bytes
+echo   This single .exe:
+echo     - Installs mxcagent to your system
+echo     - Adds it to PATH
+echo     - Registers in Apps ^& Features
+echo     - Embeds a full uninstaller
 echo.
-echo   This single exe has everything baked in:
-echo     - Python runtime
-echo     - All dependencies
-echo     - Agent source code
-echo     - API key from .env
-echo.
-echo   Just copy it anywhere and run it. No install needed.
+echo   Just run mxcagent-installer.exe to install!
 echo.
 echo ============================================================
 echo.

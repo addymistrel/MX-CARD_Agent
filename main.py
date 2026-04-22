@@ -2,7 +2,6 @@ import asyncio
 import base64
 import hashlib
 import os
-import shutil
 from pathlib import Path
 import sys
 import click
@@ -82,118 +81,6 @@ if getattr(sys, "frozen", False):
 else:
     load_dotenv(_app_dir / ".env")               # project root
 
-
-# ── Global install: copy exe + encrypted .env to AppData, add to PATH ────────
-_GLOBAL_BIN_DIR = Path(os.environ.get("LOCALAPPDATA", "")) / "mx-card-agent" / "bin"
-
-
-def _ensure_global_install() -> None:
-    """
-    On first run of the frozen exe, copy it into a permanent location under
-    AppData, encrypt the bundled .env and store it as .env.enc, then add
-    that location to the user PATH.
-
-    The API key is never stored as plain text on disk.
-    """
-    if not getattr(sys, "frozen", False) or sys.platform != "win32":
-        return
-
-    exe_path = Path(sys.executable).resolve()
-    global_exe = _GLOBAL_BIN_DIR / "mxcardagent.exe"
-    global_env_enc = _GLOBAL_BIN_DIR / ".env.enc"
-    global_env_raw = _GLOBAL_BIN_DIR / ".env"      # clean up old plain-text
-    bundled_env = _app_dir / ".env"
-
-    already_global = exe_path == global_exe
-
-    if not already_global:
-        try:
-            _GLOBAL_BIN_DIR.mkdir(parents=True, exist_ok=True)
-
-            # Copy exe (only if newer or not present)
-            if not global_exe.exists() or exe_path.stat().st_mtime > global_exe.stat().st_mtime:
-                print(f"\n  Installing to: {_GLOBAL_BIN_DIR}")
-                shutil.copy2(str(exe_path), str(global_exe))
-                print(f"  ✓ Copied mxcardagent.exe")
-
-            # Encrypt .env from bundle and write as .env.enc
-            if bundled_env.is_file():
-                plain = bundled_env.read_bytes()
-                global_env_enc.write_bytes(_encrypt_bytes(plain))
-                print(f"  ✓ Stored encrypted .env.enc")
-
-            # Remove any old plain-text .env left from a previous version
-            if global_env_raw.is_file():
-                global_env_raw.unlink()
-
-        except OSError as e:
-            print(f"\n  ✗ Could not install globally: {e}")
-            print(f"    You can manually copy mxcardagent.exe to a folder on your PATH.\n")
-            return
-
-    # Ensure the global bin dir is on PATH
-    _ensure_on_path(str(_GLOBAL_BIN_DIR))
-
-
-def _ensure_on_path(target_dir: str) -> None:
-    """Add target_dir to user PATH if not already there."""
-    user_path = _get_user_path()
-    if user_path is not None:
-        dirs = [d.strip().rstrip("\\").lower() for d in user_path.split(";") if d.strip()]
-        if target_dir.rstrip("\\").lower() in dirs:
-            return  # already on PATH
-
-    if _add_to_user_path(target_dir):
-        print(f"  ✓ Added to PATH. Restart your terminal to use 'mxcardagent' from anywhere.\n")
-    else:
-        print(f"\n  ✗ Could not update PATH automatically.")
-        print(f"    Manually add this directory to your PATH: {target_dir}\n")
-
-
-def _get_user_path() -> str | None:
-    """Read the current user-level PATH from the Windows registry."""
-    try:
-        import winreg
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0, winreg.KEY_READ) as key:
-            value, _ = winreg.QueryValueEx(key, "Path")
-            return value
-    except (OSError, FileNotFoundError):
-        return os.environ.get("PATH", "")
-
-
-def _add_to_user_path(directory: str) -> bool:
-    """Append a directory to the user-level PATH via the Windows registry."""
-    try:
-        import winreg
-        import ctypes
-
-        with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER, r"Environment", 0,
-            winreg.KEY_READ | winreg.KEY_WRITE,
-        ) as key:
-            try:
-                current, _ = winreg.QueryValueEx(key, "Path")
-            except FileNotFoundError:
-                current = ""
-
-            # Don't duplicate
-            dirs = [d.strip().rstrip("\\") for d in current.split(";") if d.strip()]
-            if directory.rstrip("\\").lower() in [d.lower() for d in dirs]:
-                return True
-
-            new_path = current.rstrip(";") + ";" + directory if current else directory
-            winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
-
-        # Broadcast WM_SETTINGCHANGE so new terminals pick it up immediately
-        HWND_BROADCAST = 0xFFFF
-        WM_SETTINGCHANGE = 0x001A
-        SMTO_ABORTIFHUNG = 0x0002
-        ctypes.windll.user32.SendMessageTimeoutW(
-            HWND_BROADCAST, WM_SETTINGCHANGE, 0, "Environment", SMTO_ABORTIFHUNG, 5000, ctypes.byref(ctypes.c_ulong(0))
-        )
-        return True
-    except Exception:
-        return False
 
 from agent.agent import Agent
 from agent.events import AgentEventType
@@ -399,6 +286,11 @@ class CLI:
                     )
             else:
                 console.print(f"Current approval policy: {self.config.approval.value}")
+        elif cmd_name == "/approvalmodes":
+            console.print("\n[bold]Available Approval Modes[/bold]")
+            for policy in ApprovalPolicy:
+                marker = " [green](active)[/green]" if policy == self.config.approval else ""
+                console.print(f"  • [cyan]{policy.value}[/cyan]{marker}")
         elif cmd_name == "/stats":
             stats = self.agent.session.get_stats()
             console.print("\n[bold]Session Statistics [/bold]")
@@ -571,9 +463,6 @@ def main(
     prompt: str | None,
     cwd: Path | None,
 ):
-    # On first run of the frozen exe, install globally and add to PATH
-    _ensure_global_install()
-
     try:
         try:
             config = load_config(cwd=cwd)

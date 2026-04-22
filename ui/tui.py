@@ -72,6 +72,34 @@ class TUI:
 
         return ordered
 
+    def _to_renderable(self, value: Any) -> Any:
+        """Coerce arbitrary values into something Rich can render.
+
+        Rich can render strings and many Rich objects; but plain ints / dicts may
+        raise 'unable to render <type>'. For tool args, a readable string is fine.
+        """
+
+        if value is None:
+            return "None"
+
+        # Common JSON scalars
+        if isinstance(value, (str, Text)):
+            return value
+        if isinstance(value, (bool, int, float)):
+            return str(value)
+
+        # Keep lists/dicts readable without letting Rich try to render raw objects.
+        if isinstance(value, (list, tuple, dict)):
+            try:
+                import json
+
+                return json.dumps(value, ensure_ascii=False)
+            except Exception:
+                return str(value)
+
+        # Fallback: best-effort string conversion.
+        return str(value)
+
     def _render_args_table(self, tool_name: str, args: dict[str, Any]) -> Table:
         table = Table.grid(padding=(0, 1))
         table.add_column(style="muted", justify="right", no_wrap=True)
@@ -84,10 +112,7 @@ class TUI:
                     byte_count = len(value.encode("utf-8", errors="replace"))
                     value = f"<{line_count} lines • {byte_count} bytes>"
 
-            if isinstance(value, bool):
-                value = str(value)
-
-            table.add_row(key, value)
+            table.add_row(str(key), self._to_renderable(value))
 
         return table
 
@@ -557,6 +582,7 @@ class TUI:
 - `/config` - Show current configuration
 - `/model <name>` - Change the model
 - `/approval <mode>` - Change approval mode
+- `/approvalmodes` - Show all approval modes
 - `/stats` - Show session statistics
 - `/tools` - List available tools
 - `/mcp` - Show MCP server status
