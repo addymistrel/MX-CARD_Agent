@@ -9,24 +9,77 @@ APP_PROJECT_DIR = ".mx-card-agent"
 CONFIG_FILE_NAME = "config.toml"
 AGENT_MD_FILE = "AGENT.MD"
 
-# Default project config template
-DEFAULT_PROJECT_CONFIG = """# MX-CARD Agent — Project Configuration
-# This file was auto-generated on first run. Customize as needed.
-# Docs: https://mxcardagent.com/docs
+# Default system config template (global, user-level)
+# Location (Windows): %APPDATA%\mx-card-agent\config.toml
+DEFAULT_SYSTEM_CONFIG = """# MX-CARD Agent — System Configuration (Global)
+# This file lives in your user config directory and applies to ALL projects.
+#
+# Windows: %APPDATA%\\mx-card-agent\\config.toml
+# macOS : ~/Library/Application Support/mx-card-agent/config.toml
+# Linux : ~/.config/mx-card-agent/config.toml
 
 [model]
-# temperature = 1
+# name = "gpt-4.1-mini"
+# temperature = 0.7
 
-# hooks_enabled = false
+# --- MCP (Model Context Protocol) servers ---
+# Add one or more servers under [mcp_servers.<name>].
+# The agent will try to connect at startup. If a server fails, it will
+# automatically fall back to builtin tools.
 
-# [[hooks]]
-# name = "example_hook"
-# trigger = "before_tool"
-# command = "python ./scripts/my_hook.py"
+# Filesystem server via stdio (requires Node + npx)
+# Provides file operations in a sandboxed directory.
+[mcp_servers.filesystem]
+enabled = false
+startup_timeout_sec = 2.0
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-filesystem", "."]
 
-# [mcp_servers.example]
+# Git server via stdio (requires Node + npx)
+[mcp_servers.git]
+enabled = false
+startup_timeout_sec = 2.0
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-git"]
+
+# Example 3: Remote MCP server over SSE/HTTP
+# Uncomment and set a URL:
+#
+# [mcp_servers.remote]
+# enabled = true
+# startup_timeout_sec = 2.0
+# url = "http://127.0.0.1:8080/sse"
+"""
+
+# Default per-project config template
+# Auto-created in <cwd>/.mx-card-agent/config.toml on first run
+DEFAULT_PROJECT_CONFIG = """# MX-CARD Agent — Project Configuration
+# This file is specific to this project and overrides the global system config.
+# Location: <project_root>/.mx-card-agent/config.toml
+
+# --- MCP (Model Context Protocol) servers ---
+# Enable or configure MCP servers for this project.
+# These settings merge on top of your global config.
+
+# Filesystem server via stdio (requires Node + npx)
+# [mcp_servers.filesystem]
+# enabled = true
+# startup_timeout_sec = 5.0
 # command = "npx"
 # args = ["-y", "@modelcontextprotocol/server-filesystem", "."]
+
+# Git server via stdio (requires Node + npx)
+# [mcp_servers.git]
+# enabled = true
+# startup_timeout_sec = 5.0
+# command = "npx"
+# args = ["-y", "@modelcontextprotocol/server-git"]
+
+# Remote MCP server over SSE/HTTP
+# [mcp_servers.remote]
+# enabled = true
+# startup_timeout_sec = 5.0
+# url = "http://127.0.0.1:8080/sse"
 """
 
 # Data / persistence

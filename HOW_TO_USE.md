@@ -464,7 +464,7 @@ The agent loads configuration from **two sources** (merged together, project con
 | Source | Path | Description |
 |---|---|---|
 | **System config** | `<user_config_dir>/mx-card-agent/config.toml` | Global settings for all projects |
-| **Project config** | `<project_root>/.mx-card-agent/config.toml` | Project-specific settings |
+| ~~Project config (deprecated)~~ | ~~`<project_root>/.mx-card-agent/config.toml`~~ | ~~Project-specific settings~~ |
 
 The `<user_config_dir>` varies by OS:
 - **Windows:** `%APPDATA%\mx-card-agent\`
@@ -690,6 +690,16 @@ Checkpoints are timestamped snapshots of a session. You can create multiple chec
 
 Sessions and checkpoints are stored in:
 - **Windows:** `%LOCALAPPDATA%\mx-card-agent\`
+
+### Per-project config (.mx-card-agent) (deprecated)
+
+MX-CARD Agent now defaults to **global-only configuration** and will **not** create or read a per-project `.mx-card-agent/` directory.
+
+If you need the legacy per-project merge behavior temporarily, set:
+
+- `MX_CARD_ENABLE_PROJECT_CONFIG=1`
+
+This will make the loader read `<cwd>/.mx-card-agent/config.toml` and merge it on top of the system config.
 - **macOS:** `~/Library/Application Support/mx-card-agent/`
 - **Linux:** `~/.local/share/mx-card-agent/`
 

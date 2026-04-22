@@ -5,7 +5,14 @@ from platformdirs import user_config_dir, user_data_dir
 import tomli
 
 from config.config import Config
-from constants.app import APP_DIR_NAME, CONFIG_FILE_NAME, AGENT_MD_FILE, APP_PROJECT_DIR, DEFAULT_PROJECT_CONFIG
+from constants.app import (
+    APP_DIR_NAME,
+    CONFIG_FILE_NAME,
+    AGENT_MD_FILE,
+    APP_PROJECT_DIR,
+    DEFAULT_SYSTEM_CONFIG,
+    DEFAULT_PROJECT_CONFIG,
+)
 from utils.errors import ConfigError
 import logging
 
@@ -22,6 +29,69 @@ def get_data_dir() -> Path:
 
 def get_system_config_path() -> Path:
     return get_config_dir() / CONFIG_FILE_NAME
+
+
+def _ensure_system_config() -> None:
+    """Create the global config.toml on first run if it doesn't exist."""
+    config_dir = get_config_dir()
+    config_path = get_system_config_path()
+
+    if config_path.exists():
+        return
+
+    try:
+        config_dir.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(DEFAULT_SYSTEM_CONFIG, encoding="utf-8")
+        logger.info(f"Created system config: {config_path}")
+    except OSError as e:
+        # Non-fatal: the app can still run with defaults.
+        logger.warning(f"Could not create system config file: {e}")
+
+
+def _ensure_project_config(cwd: Path) -> None:
+    """Create <cwd>/.mx-card-agent/config.toml if it doesn't exist."""
+    agent_dir = cwd.resolve() / APP_PROJECT_DIR
+    config_path = agent_dir / CONFIG_FILE_NAME
+
+    if config_path.exists():
+        return
+
+    try:
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(DEFAULT_PROJECT_CONFIG, encoding="utf-8")
+        logger.info(f"Created project config: {config_path}")
+    except OSError as e:
+        logger.warning(f"Could not create project config file: {e}")
+
+    _ensure_gitignore(cwd)
+
+
+def _ensure_gitignore(cwd: Path) -> None:
+    """Ensure APP_PROJECT_DIR is listed in the .gitignore at cwd."""
+    gitignore_path = cwd.resolve() / ".gitignore"
+    entry = APP_PROJECT_DIR
+
+    try:
+        if gitignore_path.is_file():
+            content = gitignore_path.read_text(encoding="utf-8")
+            # Already present — nothing to do
+            for line in content.splitlines():
+                if line.strip() == entry or line.strip() == f"{entry}/":
+                    return
+            # Append with a leading newline to be safe
+            separator = "" if content.endswith("\n") else "\n"
+            gitignore_path.write_text(
+                f"{content}{separator}\n# MX-CARD Agent local config\n{entry}/\n",
+                encoding="utf-8",
+            )
+        else:
+            gitignore_path.write_text(
+                f"# MX-CARD Agent local config\n{entry}/\n",
+                encoding="utf-8",
+            )
+        logger.info(f"Added {entry}/ to {gitignore_path}")
+    except OSError as e:
+        logger.warning(f"Could not update .gitignore: {e}")
 
 
 def _parse_toml(path: Path):
@@ -46,24 +116,6 @@ def _get_project_config(cwd: Path) -> Path | None:
             return config_file
 
     return None
-
-
-def _ensure_project_dir(cwd: Path) -> None:
-    """Create .mx-card-agent/ with a default config.toml on first run."""
-    agent_dir = cwd.resolve() / APP_PROJECT_DIR
-    config_file = agent_dir / CONFIG_FILE_NAME
-    tools_dir = agent_dir / "tools"
-
-    if agent_dir.exists():
-        return
-
-    try:
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        tools_dir.mkdir(parents=True, exist_ok=True)
-        config_file.write_text(DEFAULT_PROJECT_CONFIG, encoding="utf-8")
-        logger.info(f"Created project config directory: {agent_dir}")
-    except OSError as e:
-        logger.warning(f"Could not create project config directory: {e}")
 
 
 def _get_agent_md_files(cwd: Path) -> str | None:
@@ -92,7 +144,11 @@ def _merge_dicts(base: dict[str, Any], override: dict[str, Any]) -> dict[str, An
 def load_config(cwd: Path | None) -> Config:
     cwd = cwd or Path.cwd()
 
-    _ensure_project_dir(cwd)
+    # System config is global and applies to all projects.
+    _ensure_system_config()
+
+    # Per-project config: auto-create .mx-card-agent/config.toml if missing.
+    _ensure_project_config(cwd)
 
     system_path = get_system_config_path()
 
@@ -104,11 +160,14 @@ def load_config(cwd: Path | None) -> Config:
         except ConfigError:
             logger.warning(f"Skipping invalid system config: {system_path}")
 
+    # Per-project config: if <cwd>/.mx-card-agent/config.toml exists, merge it
+    # on top of the system config. Project settings override global ones.
     project_path = _get_project_config(cwd)
     if project_path:
         try:
             project_config_dict = _parse_toml(project_path)
             config_dict = _merge_dicts(config_dict, project_config_dict)
+            logger.info(f"Loaded project config: {project_path}")
         except ConfigError:
             logger.warning(f"Skipping invalid project config: {project_path}")
 

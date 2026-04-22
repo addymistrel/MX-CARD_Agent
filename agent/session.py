@@ -15,6 +15,10 @@ from tools.discovery import ToolDiscoveryManager
 from tools.mcp.mcp_manager import MCPManager
 from tools.registry import create_default_registry
 from utils.undo import UndoTracker
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class Session:
@@ -43,8 +47,21 @@ class Session:
         self.turn_count = 0
 
     async def initialize(self) -> None:
-        await self.mcp_manager.initialize()
-        self.mcp_manager.register_tools(self.tool_registry)
+        # MCP is optional. If it fails to initialize/connect, we fall back to builtin tools.
+        try:
+            await self.mcp_manager.initialize()
+        except Exception as e:
+            # Don't crash session startup if MCP is down/misconfigured.
+            logger.warning(f"MCP initialization failed; falling back to builtin tools. Error: {e}")
+
+        mcp_tool_count = 0
+        try:
+            mcp_tool_count = self.mcp_manager.register_tools(self.tool_registry)
+        except Exception as e:
+            logger.warning(f"MCP tool registration failed; falling back to builtin tools. Error: {e}")
+
+        if self.config.debug and mcp_tool_count == 0 and self.config.mcp_servers:
+            logger.info("No MCP tools available (no servers connected). Using builtin tools only.")
 
         self.discovery_manager.discover_all()
         self.context_manager = ContextManager(
