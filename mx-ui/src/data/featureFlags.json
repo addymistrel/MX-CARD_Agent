@@ -1,0 +1,22 @@
+{
+  "/": true,
+  "/pricing": true,
+  "/auth": true,
+  "/#features": false,
+  "/#tutorial": false,
+  "/#screenshots": true,
+  "/docs": false,
+  "/api-reference": false,
+  "/changelog": false,
+  "/roadmap": false,
+  "/about": false,
+  "/blog": false,
+  "/careers": false,
+  "/contact": false,
+  "social:github": true,
+  "social:twitter": false,
+  "social:discord": false,
+  "auth:submit": false,
+  "auth:forgot-password": false,
+  "pricing:cta": false
+}

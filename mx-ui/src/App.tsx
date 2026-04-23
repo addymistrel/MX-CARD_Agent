@@ -1,9 +1,9 @@
 ﻿import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navbar } from "@/components/shared/Navbar";
 import { Footer } from "@/components/shared/Footer";
-import { HomePage } from "@/pages/HomePage";
-import { PricingPage } from "@/pages/PricingPage";
-import { AuthPage } from "@/pages/AuthPage";
+import { HomePage } from "@/pages/home";
+import { PricingPage } from "@/pages/pricing";
+import { AuthPage } from "@/pages/auth";
 
 export default function App() {
   return (

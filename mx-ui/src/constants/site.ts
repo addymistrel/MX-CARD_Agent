@@ -27,25 +27,25 @@ export const FOOTER_SECTIONS: FooterSection[] = [
   {
     title: "Resources",
     links: [
-      { label: "Documentation", href: "#" },
-      { label: "API Reference", href: "#" },
-      { label: "Changelog", href: "#" },
-      { label: "Roadmap", href: "#" },
+      { label: "Documentation", href: "/docs" },
+      { label: "API Reference", href: "/api-reference" },
+      { label: "Changelog", href: "/changelog" },
+      { label: "Roadmap", href: "/roadmap" },
     ],
   },
   {
     title: "Company",
     links: [
-      { label: "About", href: "#" },
-      { label: "Blog", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Contact", href: "#" },
+      { label: "About", href: "/about" },
+      { label: "Blog", href: "/blog" },
+      { label: "Careers", href: "/careers" },
+      { label: "Contact", href: "/contact" },
     ],
   },
 ];
 
 export const SOCIAL_LINKS: SocialLink[] = [
   { name: "GitHub", href: "https://github.com/addymistrel/MX-CARD_Agent", icon: "github" },
-  { name: "Twitter", href: "#", icon: "twitter" },
-  { name: "Discord", href: "#", icon: "discord" },
+  { name: "Twitter", href: "https://twitter.com", icon: "twitter" },
+  { name: "Discord", href: "https://discord.gg", icon: "discord" },
 ];
