@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-::  MX-CARD Agent — Installer
+::  MX-CARD Agent - Installer
 ::  Installs mxcardagent.exe to system and adds to PATH.
 ::
 ::  Usage:  Run install.bat after build.bat
@@ -10,7 +10,7 @@ setlocal EnableDelayedExpansion
 
 echo.
 echo ============================================================
-echo   MX-CARD Agent — Installer
+echo   MX-CARD Agent - Installer
 echo ============================================================
 echo.
 
@@ -59,7 +59,7 @@ echo setlocal EnableDelayedExpansion
 echo.
 echo echo.
 echo echo ============================================================
-echo echo   MX-CARD Agent — Uninstaller
+echo echo   MX-CARD Agent - Uninstaller
 echo echo ============================================================
 echo echo.
 echo echo This will completely remove MX-CARD Agent from your system.

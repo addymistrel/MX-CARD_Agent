@@ -11,7 +11,7 @@ AGENT_MD_FILE = "AGENT.MD"
 
 # Default system config template (global, user-level)
 # Location (Windows): %APPDATA%\mx-card-agent\config.toml
-DEFAULT_SYSTEM_CONFIG = """# MX-CARD Agent — System Configuration (Global)
+DEFAULT_SYSTEM_CONFIG = """# MX-CARD Agent - System Configuration (Global)
 # This file lives in your user config directory and applies to ALL projects.
 #
 # Windows: %APPDATA%\\mx-card-agent\\config.toml
@@ -53,7 +53,7 @@ args = ["-y", "@modelcontextprotocol/server-git"]
 
 # Default per-project config template
 # Auto-created in <cwd>/.mx-card-agent/config.toml on first run
-DEFAULT_PROJECT_CONFIG = """# MX-CARD Agent — Project Configuration
+DEFAULT_PROJECT_CONFIG = """# MX-CARD Agent - Project Configuration
 # This file is specific to this project and overrides the global system config.
 # Location: <project_root>/.mx-card-agent/config.toml
 

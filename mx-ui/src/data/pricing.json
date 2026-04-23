@@ -1,0 +1,58 @@
+[
+  {
+    "id": "free",
+    "name": "Starter",
+    "description": "Perfect for individual developers exploring AI-assisted coding.",
+    "price": "$0",
+    "period": "forever",
+    "features": [
+      "5 sessions per day",
+      "Basic built-in tools",
+      "Community support",
+      "Single model support",
+      "Session history (7 days)"
+    ],
+    "cta": "Get Started Free",
+    "highlighted": false
+  },
+  {
+    "id": "pro",
+    "name": "Pro",
+    "description": "For professional developers who need full power and flexibility.",
+    "price": "$29",
+    "period": "per month",
+    "features": [
+      "Unlimited sessions",
+      "All built-in tools",
+      "MCP tool integration",
+      "Multi-model support",
+      "Priority support",
+      "Session persistence",
+      "Custom safety policies",
+      "Sub-agent delegation"
+    ],
+    "cta": "Start Pro Trial",
+    "highlighted": true,
+    "badge": "Most Popular"
+  },
+  {
+    "id": "enterprise",
+    "name": "Enterprise",
+    "description": "For teams needing advanced security, control, and scale.",
+    "price": "$99",
+    "period": "per user/month",
+    "features": [
+      "Everything in Pro",
+      "SSO & SAML authentication",
+      "Audit logging",
+      "Custom model endpoints",
+      "Dedicated support",
+      "On-premise deployment",
+      "Team session sharing",
+      "Advanced hook system",
+      "SLA guarantee"
+    ],
+    "cta": "Contact Sales",
+    "highlighted": false
+  }
+]

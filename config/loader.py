@@ -74,7 +74,7 @@ def _ensure_gitignore(cwd: Path) -> None:
     try:
         if gitignore_path.is_file():
             content = gitignore_path.read_text(encoding="utf-8")
-            # Already present — nothing to do
+            # Already present - nothing to do
             for line in content.splitlines():
                 if line.strip() == entry or line.strip() == f"{entry}/":
                     return

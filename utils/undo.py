@@ -81,14 +81,14 @@ class UndoTracker:
 
         try:
             if change.is_new_file:
-                # File was created — delete it
+                # File was created - delete it
                 if change.path.exists():
                     change.path.unlink()
                     return True, f"Deleted {change.path} (undid file creation)"
                 else:
                     return False, f"File already removed: {change.path}"
             else:
-                # File was modified — restore old content
+                # File was modified - restore old content
                 if change.old_content is not None:
                     change.path.write_text(change.old_content, encoding="utf-8")
                     return True, f"Restored {change.path} to previous state"

@@ -1,4 +1,4 @@
-# 🚀 Future Updates — MX-CARD Agent Roadmap
+# 🚀 Future Updates - MX-CARD Agent Roadmap
 
 This document outlines planned advancements for the MX-CARD Agent, organized by priority. Each section describes the **current state**, the **proposed future state**, and the **impact** of the change.
 
@@ -31,7 +31,7 @@ This document outlines planned advancements for the MX-CARD Agent, organized by 
 
 ### Current State
 
-The LLM client (`client/llm_client.py`) is **tightly coupled to OpenAI** through the `AsyncOpenAI` SDK. All API calls — streaming, tool calling, retry logic — are written directly against OpenAI's interface. To use any other model provider (Anthropic Claude, Google Gemini, Mistral, or a local model via Ollama), the entire client would need to be rewritten.
+The LLM client (`client/llm_client.py`) is **tightly coupled to OpenAI** through the `AsyncOpenAI` SDK. All API calls - streaming, tool calling, retry logic - are written directly against OpenAI's interface. To use any other model provider (Anthropic Claude, Google Gemini, Mistral, or a local model via Ollama), the entire client would need to be rewritten.
 
 ```
 ┌──────────┐      ┌──────────────┐      ┌──────────┐
@@ -43,7 +43,7 @@ The LLM client (`client/llm_client.py`) is **tightly coupled to OpenAI** through
 
 ### Future State
 
-Introduce a `BaseLLMClient` abstract interface that defines a standard contract (`chat_completion`, `close`, etc.). Each provider gets its own implementation — `OpenAIClient`, `AnthropicClient`, `GeminiClient`, `OllamaClient`. The config file gets a `provider` field, and the correct client is instantiated at startup.
+Introduce a `BaseLLMClient` abstract interface that defines a standard contract (`chat_completion`, `close`, etc.). Each provider gets its own implementation - `OpenAIClient`, `AnthropicClient`, `GeminiClient`, `OllamaClient`. The config file gets a `provider` field, and the correct client is instantiated at startup.
 
 ```
 ┌──────────┐      ┌────────────────┐      ┌──────────────┐
@@ -59,9 +59,9 @@ Introduce a `BaseLLMClient` abstract interface that defines a standard contract 
 
 ### Why It Matters
 
-- **Provider lock-in is eliminated** — users can choose the best model for their use case (cost, speed, capability).
-- **Local model support via Ollama** enables fully offline, private operation — critical for enterprise and air-gapped environments.
-- **Cost optimization** — use cheaper models (GPT-4o-mini, Gemini Flash) for simple tasks and powerful models (Claude Opus, GPT-4o) for complex reasoning.
+- **Provider lock-in is eliminated** - users can choose the best model for their use case (cost, speed, capability).
+- **Local model support via Ollama** enables fully offline, private operation - critical for enterprise and air-gapped environments.
+- **Cost optimization** - use cheaper models (GPT-4o-mini, Gemini Flash) for simple tasks and powerful models (Claude Opus, GPT-4o) for complex reasoning.
 
 ---
 
@@ -78,7 +78,7 @@ for tool_call in tool_calls:
     result = await self.session.tool_registry.invoke(...)
 ```
 
-If the LLM asks to read 5 files simultaneously, each file read waits for the previous one to finish — even though they are completely independent operations.
+If the LLM asks to read 5 files simultaneously, each file read waits for the previous one to finish - even though they are completely independent operations.
 
 ### Future State
 
@@ -132,7 +132,7 @@ The shell tool will read from `process.stdout` and `process.stderr` incrementall
 
 ### Why It Matters
 
-- **Dramatically improved UX** for long-running commands — users can see progress and identify issues early.
+- **Dramatically improved UX** for long-running commands - users can see progress and identify issues early.
 - Enables the user to interrupt commands that are clearly going wrong, rather than waiting for timeout.
 - Makes the agent feel responsive and transparent rather than opaque.
 
@@ -144,7 +144,7 @@ The shell tool will read from `process.stdout` and `process.stderr` incrementall
 
 ### Current State
 
-The agent has **no explicit planning mechanism**. It relies entirely on the LLM's internal reasoning to decide what to do next. The agentic loop in `agent/agent.py` simply passes messages to the LLM and executes whatever tool calls come back. The `todos` tool exists but is optional — the LLM may or may not use it.
+The agent has **no explicit planning mechanism**. It relies entirely on the LLM's internal reasoning to decide what to do next. The agentic loop in `agent/agent.py` simply passes messages to the LLM and executes whatever tool calls come back. The `todos` tool exists but is optional - the LLM may or may not use it.
 
 ```
 User message → LLM → Tool calls → LLM → Tool calls → ... → Final response
@@ -161,14 +161,14 @@ User message → THINK (plan) → ACT (tool call) → OBSERVE (result) → THINK
 
 Concrete additions:
 - A `think` tool / scratchpad that lets the LLM reason without taking any action. This reasoning is visible to the user but not sent as a tool result.
-- An explicit **planning phase** before the first tool call — the agent outputs a numbered plan, then executes it step by step.
+- An explicit **planning phase** before the first tool call - the agent outputs a numbered plan, then executes it step by step.
 - Automatic plan updates when the situation changes (e.g., a tool returns an unexpected error).
 
 ### Why It Matters
 
-- **Higher accuracy on complex tasks** — structured reasoning reduces the chance of the LLM going off-track.
-- **Transparency** — users can see *why* the agent is doing something, not just *what* it's doing.
-- **Debuggability** — when something goes wrong, the reasoning trace makes it easy to identify where the logic broke down.
+- **Higher accuracy on complex tasks** - structured reasoning reduces the chance of the LLM going off-track.
+- **Transparency** - users can see *why* the agent is doing something, not just *what* it's doing.
+- **Debuggability** - when something goes wrong, the reasoning trace makes it easy to identify where the logic broke down.
 
 ---
 
@@ -184,9 +184,9 @@ The `edit` tool (`tools/builtin/edit_file.py`) handles single-file, single-repla
 
 Add two new capabilities:
 
-1. **`apply_patch` tool** — Accepts a unified diff (or structured multi-file edit spec) and applies changes across multiple files atomically. If any file fails, all changes are rolled back.
+1. **`apply_patch` tool** - Accepts a unified diff (or structured multi-file edit spec) and applies changes across multiple files atomically. If any file fails, all changes are rolled back.
 
-2. **Undo / Rollback system** — Before any file modification, the original content is snapshotted. A `/undo` command or `undo` tool reverts the last set of changes.
+2. **Undo / Rollback system** - Before any file modification, the original content is snapshotted. A `/undo` command or `undo` tool reverts the last set of changes.
 
 ```
 apply_patch:
@@ -202,9 +202,9 @@ apply_patch:
 
 ### Why It Matters
 
-- **Faster refactoring** — multi-file renames, import updates, and signature changes happen in one tool call instead of many.
-- **Atomicity** — no more half-applied changes when an edit fails midway through a batch.
-- **Safety** — rollback provides a safety net, encouraging the agent (and user) to make bolder changes confidently.
+- **Faster refactoring** - multi-file renames, import updates, and signature changes happen in one tool call instead of many.
+- **Atomicity** - no more half-applied changes when an edit fails midway through a batch.
+- **Safety** - rollback provides a safety net, encouraging the agent (and user) to make bolder changes confidently.
 
 ---
 
@@ -216,9 +216,9 @@ apply_patch:
 
 Memory (`tools/builtin/memory.py`) is a **flat JSON key-value store** saved to disk. The session loads all memory entries into the system prompt as plain text (`session.py:_load_memory()`). This approach has severe limitations:
 
-- **No semantic retrieval** — the agent can't search memory by meaning, only by exact key.
-- **Scalability ceiling** — all memory is injected into the system prompt, consuming context window tokens proportionally.
-- **No project-level memory** — there's no separation between user preferences and project-specific knowledge.
+- **No semantic retrieval** - the agent can't search memory by meaning, only by exact key.
+- **Scalability ceiling** - all memory is injected into the system prompt, consuming context window tokens proportionally.
+- **No project-level memory** - there's no separation between user preferences and project-specific knowledge.
 
 ```
 memory.json:
@@ -235,11 +235,11 @@ memory.json:
 
 A three-tier memory architecture:
 
-1. **User Memory** (persists across all projects) — preferences, style, common patterns. Stored as structured data.
+1. **User Memory** (persists across all projects) - preferences, style, common patterns. Stored as structured data.
 
-2. **Project Memory** (persists per project) — codebase architecture notes, key decisions, file purposes. Stored with embeddings for semantic retrieval.
+2. **Project Memory** (persists per project) - codebase architecture notes, key decisions, file purposes. Stored with embeddings for semantic retrieval.
 
-3. **Episodic Memory** (persists per session history) — what was done in past sessions, what worked, what failed. Enables "remember last time we tried X and it didn't work because Y."
+3. **Episodic Memory** (persists per session history) - what was done in past sessions, what worked, what failed. Enables "remember last time we tried X and it didn't work because Y."
 
 Semantic retrieval using vector embeddings (via `chromadb` or `faiss`):
 
@@ -253,9 +253,9 @@ User: "How does authentication work in this project?"
 
 ### Why It Matters
 
-- **Long-term learning** — the agent gets smarter over time as it accumulates project knowledge.
-- **Context efficiency** — only relevant memories are retrieved, rather than dumping everything into the prompt.
-- **Continuity across sessions** — the agent remembers past work without the user needing to re-explain context.
+- **Long-term learning** - the agent gets smarter over time as it accumulates project knowledge.
+- **Context efficiency** - only relevant memories are retrieved, rather than dumping everything into the prompt.
+- **Continuity across sessions** - the agent remembers past work without the user needing to re-explain context.
 
 ---
 
@@ -265,7 +265,7 @@ User: "How does authentication work in this project?"
 
 ### Current State
 
-Subagents (`tools/subagents.py`) are independent `Agent` instances with their own `Config` and context. The parent agent has **no visibility** into what a subagent is doing — it only receives the final result. Two subagents exist: `codebase_investigator` and `code_reviewer`. Subagents cannot communicate with each other or share findings.
+Subagents (`tools/subagents.py`) are independent `Agent` instances with their own `Config` and context. The parent agent has **no visibility** into what a subagent is doing - it only receives the final result. Two subagents exist: `codebase_investigator` and `code_reviewer`. Subagents cannot communicate with each other or share findings.
 
 ```
 Parent Agent
@@ -279,14 +279,14 @@ Parent Agent
 
 ### Future State
 
-- **Progress streaming** — subagents emit progress events that the parent can relay to the user (e.g., "Subagent: Found 3 relevant files, analyzing...").
-- **Parallel subagent execution** — the parent can spawn multiple subagents concurrently for different aspects of a task.
-- **Shared workspace context** — subagents can write findings to a shared scratchpad that other subagents and the parent can read.
+- **Progress streaming** - subagents emit progress events that the parent can relay to the user (e.g., "Subagent: Found 3 relevant files, analyzing...").
+- **Parallel subagent execution** - the parent can spawn multiple subagents concurrently for different aspects of a task.
+- **Shared workspace context** - subagents can write findings to a shared scratchpad that other subagents and the parent can read.
 - **New subagent types:**
-  - `test_writer` — generates unit tests for code changes
-  - `documentation_writer` — updates docs based on code changes
-  - `security_auditor` — scans changes for security issues
-  - `refactoring_specialist` — handles complex multi-file refactoring
+  - `test_writer` - generates unit tests for code changes
+  - `documentation_writer` - updates docs based on code changes
+  - `security_auditor` - scans changes for security issues
+  - `refactoring_specialist` - handles complex multi-file refactoring
 
 ```
 Parent Agent
@@ -301,9 +301,9 @@ Parent Agent
 
 ### Why It Matters
 
-- **Divide-and-conquer** — complex tasks are broken into specialized subtasks, each handled by an expert subagent.
-- **Transparency** — progress streaming means the user isn't left in the dark during long subagent operations.
-- **Quality** — specialized subagents (security, testing, docs) catch issues that a generalist agent might miss.
+- **Divide-and-conquer** - complex tasks are broken into specialized subtasks, each handled by an expert subagent.
+- **Transparency** - progress streaming means the user isn't left in the dark during long subagent operations.
+- **Quality** - specialized subagents (security, testing, docs) catch issues that a generalist agent might miss.
 
 ---
 
@@ -313,7 +313,7 @@ Parent Agent
 
 ### Current State
 
-Code search relies on **text-based tools only** — `grep` for pattern matching and `glob` for file path matching. The agent has no understanding of code structure (AST, symbols, imports, class hierarchies). Finding how a function is used requires multiple grep calls and manual reasoning by the LLM.
+Code search relies on **text-based tools only** - `grep` for pattern matching and `glob` for file path matching. The agent has no understanding of code structure (AST, symbols, imports, class hierarchies). Finding how a function is used requires multiple grep calls and manual reasoning by the LLM.
 
 ```
 Agent wants to find where `authenticate()` is used:
@@ -326,16 +326,16 @@ Agent wants to find where `authenticate()` is used:
 
 On session start (or on-demand), build a **codebase index** that includes:
 
-- **Symbol table** — all functions, classes, methods, variables with their locations.
-- **Import graph** — which files import what, dependency chains.
-- **Call graph** — which functions call which other functions.
-- **Semantic embeddings** — code chunks embedded for meaning-based search.
+- **Symbol table** - all functions, classes, methods, variables with their locations.
+- **Import graph** - which files import what, dependency chains.
+- **Call graph** - which functions call which other functions.
+- **Semantic embeddings** - code chunks embedded for meaning-based search.
 
 New tools:
-- `semantic_search` — find code by meaning ("where is user authentication handled?")
-- `find_references` — find all usages of a symbol across the codebase
-- `find_definition` — jump to where a symbol is defined
-- `dependency_graph` — show what a file depends on and what depends on it
+- `semantic_search` - find code by meaning ("where is user authentication handled?")
+- `find_references` - find all usages of a symbol across the codebase
+- `find_definition` - jump to where a symbol is defined
+- `dependency_graph` - show what a file depends on and what depends on it
 
 ```
 Agent wants to find where `authenticate()` is used:
@@ -345,9 +345,9 @@ Agent wants to find where `authenticate()` is used:
 
 ### Why It Matters
 
-- **Dramatically faster codebase navigation** — 1 tool call instead of 5–10.
-- **Fewer false positives** — structural search understands code semantics, not just text patterns.
-- **Better refactoring** — the agent can confidently find all usages before making changes.
+- **Dramatically faster codebase navigation** - 1 tool call instead of 5–10.
+- **Fewer false positives** - structural search understands code semantics, not just text patterns.
+- **Better refactoring** - the agent can confidently find all usages before making changes.
 
 ---
 
@@ -384,13 +384,13 @@ Dedicated, structured git tools:
 Additional capabilities:
 - **Auto-generated commit messages** based on the changes made during the session.
 - **PR description generation** summarizing all changes, their rationale, and testing done.
-- **Change awareness** — the agent automatically knows what files have been modified.
+- **Change awareness** - the agent automatically knows what files have been modified.
 
 ### Why It Matters
 
-- **Workflow completeness** — the agent can manage the entire development lifecycle from code change to commit to PR.
-- **Reliability** — structured git tools eliminate the risk of malformed git commands.
-- **Automation** — auto-generated commit messages and PR descriptions save significant developer time.
+- **Workflow completeness** - the agent can manage the entire development lifecycle from code change to commit to PR.
+- **Reliability** - structured git tools eliminate the risk of malformed git commands.
+- **Automation** - auto-generated commit messages and PR descriptions save significant developer time.
 
 ---
 
@@ -404,20 +404,20 @@ The agent is **text-only**. It cannot process images, screenshots, or any non-te
 
 ### Future State
 
-- **Image input support** — users can paste or reference images (screenshots, diagrams, mockups) in their messages.
-- **Vision API integration** — leverage OpenAI's GPT-4o vision, Anthropic's Claude vision, or Google's Gemini vision to analyze images.
-- **Screenshot tool** — capture the current terminal state or a window for the agent to analyze.
+- **Image input support** - users can paste or reference images (screenshots, diagrams, mockups) in their messages.
+- **Vision API integration** - leverage OpenAI's GPT-4o vision, Anthropic's Claude vision, or Google's Gemini vision to analyze images.
+- **Screenshot tool** - capture the current terminal state or a window for the agent to analyze.
 
 Use cases:
-- "Here's a screenshot of the error — fix it."
-- "Here's the UI mockup — implement it."
-- "Here's the architecture diagram — explain the data flow."
+- "Here's a screenshot of the error - fix it."
+- "Here's the UI mockup - implement it."
+- "Here's the architecture diagram - explain the data flow."
 
 ### Why It Matters
 
-- **Reduced friction** — users can share visual context instead of describing it in text.
-- **UI development** — the agent can compare mockups to implementations.
-- **Error diagnosis** — screenshots of error dialogs, browser devtools, or terminal output are instantly understood.
+- **Reduced friction** - users can share visual context instead of describing it in text.
+- **UI development** - the agent can compare mockups to implementations.
+- **Error diagnosis** - screenshots of error dialogs, browser devtools, or terminal output are instantly understood.
 
 ---
 
@@ -428,16 +428,16 @@ Use cases:
 ### Current State
 
 Token usage is tracked in `TokenUsage` (prompt, completion, total, cached tokens) and aggregated in `ContextManager.total_usage`. However:
-- **No cost calculation** — token counts are tracked but never converted to dollar amounts.
-- **No budget limits** — the agent will keep running (and spending) until `max_turns` is reached.
-- **No per-tool cost attribution** — impossible to identify which tools or operations are most expensive.
+- **No cost calculation** - token counts are tracked but never converted to dollar amounts.
+- **No budget limits** - the agent will keep running (and spending) until `max_turns` is reached.
+- **No per-tool cost attribution** - impossible to identify which tools or operations are most expensive.
 - `/stats` shows token counts but not costs.
 
 ### Future State
 
-- **Model-aware cost calculation** — each model has its pricing (e.g., GPT-4o at $2.50/$10 per 1M input/output tokens). Cost is calculated per turn and cumulatively.
-- **Budget limits** — configurable per-session and global spending caps. The agent warns at 80% and stops at 100%.
-- **Cost attribution** — track which tool calls are most expensive (context sent before/after each call).
+- **Model-aware cost calculation** - each model has its pricing (e.g., GPT-4o at $2.50/$10 per 1M input/output tokens). Cost is calculated per turn and cumulatively.
+- **Budget limits** - configurable per-session and global spending caps. The agent warns at 80% and stops at 100%.
+- **Cost attribution** - track which tool calls are most expensive (context sent before/after each call).
 - **Enhanced `/stats`:**
 
 ```
@@ -446,14 +446,14 @@ Session Stats:
   Tokens: 45,230 (prompt: 38,100 | completion: 7,130 | cached: 12,400)
   Cost: $0.47 (prompt: $0.10 | completion: $0.07 | cached savings: $0.03)
   Budget remaining: $4.53 / $5.00
-  Most expensive operation: shell("npm test") — $0.12 (large output)
+  Most expensive operation: shell("npm test") - $0.12 (large output)
 ```
 
 ### Why It Matters
 
-- **Cost visibility** — users know exactly how much they're spending per session.
-- **Budget safety** — prevents runaway spending from infinite loops or verbose tool outputs.
-- **Optimization insights** — cost attribution helps identify and reduce expensive patterns.
+- **Cost visibility** - users know exactly how much they're spending per session.
+- **Budget safety** - prevents runaway spending from infinite loops or verbose tool outputs.
+- **Optimization insights** - cost attribution helps identify and reduce expensive patterns.
 
 ---
 
@@ -476,19 +476,19 @@ Tool fails → Error message sent to LLM → LLM decides what to do
 
 ### Future State
 
-- **Error classification** — categorize errors as transient (network timeout, rate limit), permanent (file not found, permission denied), or user-fixable (missing dependency, wrong path).
+- **Error classification** - categorize errors as transient (network timeout, rate limit), permanent (file not found, permission denied), or user-fixable (missing dependency, wrong path).
 - **Automatic retry with strategy adjustment:**
   - Transient errors → retry with exponential backoff (already done for API calls, extend to tools).
   - Permission errors → suggest `sudo` or check file ownership.
   - Missing dependency errors → auto-install and retry.
-- **Diagnostic context gathering** — when errors occur, automatically collect relevant system state (disk space, file permissions, network connectivity, running processes) and include it in the error context.
-- **Error pattern learning** — remember errors and their solutions in project memory so the same mistake isn't repeated in future sessions.
+- **Diagnostic context gathering** - when errors occur, automatically collect relevant system state (disk space, file permissions, network connectivity, running processes) and include it in the error context.
+- **Error pattern learning** - remember errors and their solutions in project memory so the same mistake isn't repeated in future sessions.
 
 ### Why It Matters
 
-- **Higher autonomy** — the agent can recover from common failures without user intervention.
-- **Fewer abandoned tasks** — instead of getting stuck on an error, the agent tries alternative approaches.
-- **Faster debugging** — diagnostic context gives the LLM (and the user) better information to work with.
+- **Higher autonomy** - the agent can recover from common failures without user intervention.
+- **Fewer abandoned tasks** - instead of getting stuck on an error, the agent tries alternative approaches.
+- **Faster debugging** - diagnostic context gives the LLM (and the user) better information to work with.
 
 ---
 
@@ -499,10 +499,10 @@ Tool fails → Error message sent to LLM → LLM decides what to do
 ### Current State
 
 Tool discovery (`tools/discovery.py`) loads `.py` files from a `.mx-card/tools/` directory. While functional, it is:
-- **Undocumented** — no guide for creating custom tools.
-- **No packaging** — tools can't be shared or distributed.
-- **No dependency management** — custom tools can't declare their own pip dependencies.
-- **No versioning** — no way to track tool versions or compatibility.
+- **Undocumented** - no guide for creating custom tools.
+- **No packaging** - tools can't be shared or distributed.
+- **No dependency management** - custom tools can't declare their own pip dependencies.
+- **No versioning** - no way to track tool versions or compatibility.
 
 ### Future State
 
@@ -525,16 +525,16 @@ async def deploy(environment: str, branch: str = "main") -> str:
 ```
 
 Distribution and sharing:
-- `pip install mx-card-tool-docker` — install a community tool pack.
+- `pip install mx-card-tool-docker` - install a community tool pack.
 - Tool packs declare their dependencies, which are auto-installed.
 - A registry/marketplace for discovering community tools.
 - Versioning and compatibility checking with the core agent.
 
 ### Why It Matters
 
-- **Extensibility** — teams can build domain-specific tools (deployment, database, cloud infrastructure) without forking the core agent.
-- **Community ecosystem** — shared tools accelerate development and adoption.
-- **Standardization** — a proper SDK ensures tools are well-structured, documented, and safe.
+- **Extensibility** - teams can build domain-specific tools (deployment, database, cloud infrastructure) without forking the core agent.
+- **Community ecosystem** - shared tools accelerate development and adoption.
+- **Standardization** - a proper SDK ensures tools are well-structured, documented, and safe.
 
 ---
 
@@ -564,11 +564,11 @@ mx-card-agent serve --port 8080
 - File diff viewer for code changes.
 - Tool call visualization with expandable details.
 - Session history and management.
-- Team collaboration — multiple users can observe or interact with the same agent session.
+- Team collaboration - multiple users can observe or interact with the same agent session.
 
 ```
 ┌────────────────────────────────────────┐
-│  MX-CARD Agent — Web UI               │
+│  MX-CARD Agent - Web UI               │
 ├────────────────────────────────────────┤
 │  [Session: abc123]                     │
 │                                        │
@@ -593,9 +593,9 @@ mx-card-agent serve --port 8080
 
 ### Why It Matters
 
-- **Accessibility** — not everyone is comfortable in a terminal; a web UI lowers the barrier to entry.
-- **Integration** — an API enables the agent to be embedded in other tools and workflows.
-- **Collaboration** — teams can share agent sessions, review changes together, and manage approvals through a UI.
+- **Accessibility** - not everyone is comfortable in a terminal; a web UI lowers the barrier to entry.
+- **Integration** - an API enables the agent to be embedded in other tools and workflows.
+- **Collaboration** - teams can share agent sessions, review changes together, and manage approvals through a UI.
 
 ---
 
@@ -605,38 +605,38 @@ mx-card-agent serve --port 8080
 
 ### Current State
 
-The agent has **no automated testing or verification step**. The system prompt instructs the LLM to "verify changes using the project's testing procedures," but this is advisory only — there's no enforcement. The agent may or may not run tests after making changes, and it never automatically generates tests.
+The agent has **no automated testing or verification step**. The system prompt instructs the LLM to "verify changes using the project's testing procedures," but this is advisory only - there's no enforcement. The agent may or may not run tests after making changes, and it never automatically generates tests.
 
 ### Future State
 
-- **Auto-verification step** — after completing code changes, the agentic loop automatically:
+- **Auto-verification step** - after completing code changes, the agentic loop automatically:
   1. Runs the project's linter/type-checker (detected from project config).
   2. Runs relevant test files (identified by file path patterns).
   3. If any check fails, the agent automatically attempts to fix the issue.
 
-- **Test generation subagent** — a specialized subagent that:
+- **Test generation subagent** - a specialized subagent that:
   1. Analyzes the code changes made.
   2. Generates unit tests covering the new/modified code.
   3. Runs the tests to ensure they pass.
   4. Adds the test files to the project.
 
-- **Coverage tracking** — after running tests, report coverage for changed files.
+- **Coverage tracking** - after running tests, report coverage for changed files.
 
 ```
 Agent workflow (after code changes):
-  1. ✅ Lint check (ruff check .) — passed
-  2. ✅ Type check (mypy src/) — passed
-  3. ⚠️ Tests (pytest tests/) — 1 failure
+  1. ✅ Lint check (ruff check .) - passed
+  2. ✅ Type check (mypy src/) - passed
+  3. ⚠️ Tests (pytest tests/) - 1 failure
   4. 🔧 Auto-fix: test_login.py assertion updated
-  5. ✅ Tests (pytest tests/) — all passed
-  6. 📊 Coverage: src/auth/login.py — 94% (+12%)
+  5. ✅ Tests (pytest tests/) - all passed
+  6. 📊 Coverage: src/auth/login.py - 94% (+12%)
 ```
 
 ### Why It Matters
 
-- **Higher code quality** — every change is automatically verified before being presented as "complete."
-- **Fewer regressions** — auto-generated tests catch issues that manual testing might miss.
-- **Developer confidence** — knowing the agent verifies its own work builds trust in its output.
+- **Higher code quality** - every change is automatically verified before being presented as "complete."
+- **Fewer regressions** - auto-generated tests catch issues that manual testing might miss.
+- **Developer confidence** - knowing the agent verifies its own work builds trust in its output.
 
 ---
 
@@ -662,25 +662,25 @@ Agent workflow (after code changes):
 
 ### Recommended Implementation Order
 
-**Phase 1 — Quick Wins (1–2 weeks):**
-- Parallel tool execution (#2) — minimal code change, big performance win.
-- Git integration tools (#9) — low effort, fills an obvious gap.
+**Phase 1 - Quick Wins (1–2 weeks):**
+- Parallel tool execution (#2) - minimal code change, big performance win.
+- Git integration tools (#9) - low effort, fills an obvious gap.
 
-**Phase 2 — Core Upgrades (2–4 weeks):**
-- Multi-provider support (#1) — unlocks model flexibility.
-- ReAct planning pattern (#4) — improves reasoning quality.
-- Multi-file apply_patch (#5) — faster refactoring.
+**Phase 2 - Core Upgrades (2–4 weeks):**
+- Multi-provider support (#1) - unlocks model flexibility.
+- ReAct planning pattern (#4) - improves reasoning quality.
+- Multi-file apply_patch (#5) - faster refactoring.
 
-**Phase 3 — Intelligence Layer (4–8 weeks):**
-- Codebase indexing (#8) — enables semantic understanding.
-- Richer memory system (#6) — enables long-term learning.
-- Better subagents (#7) — enables divide-and-conquer.
+**Phase 3 - Intelligence Layer (4–8 weeks):**
+- Codebase indexing (#8) - enables semantic understanding.
+- Richer memory system (#6) - enables long-term learning.
+- Better subagents (#7) - enables divide-and-conquer.
 
-**Phase 4 — Platform & Ecosystem (8+ weeks):**
-- Streaming tool output (#3) — polished UX.
-- Web UI / API server (#14) — broader accessibility.
-- Auto test generation (#15) — quality assurance.
-- Plugin SDK (#13) — community ecosystem.
+**Phase 4 - Platform & Ecosystem (8+ weeks):**
+- Streaming tool output (#3) - polished UX.
+- Web UI / API server (#14) - broader accessibility.
+- Auto test generation (#15) - quality assurance.
+- Plugin SDK (#13) - community ecosystem.
 - Multi-modal (#10), cost tracking (#11), self-healing (#12).
 
 ---

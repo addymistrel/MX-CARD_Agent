@@ -3,7 +3,7 @@
 # Shell environment default exclude patterns
 SHELL_ENV_DEFAULT_EXCLUDE_PATTERNS = ["*KEY*", "*TOKEN*", "*SECRET*"]
 
-# Dangerous command regex patterns — always rejected
+# Dangerous command regex patterns - always rejected
 DANGEROUS_COMMAND_PATTERNS = [
     # File system destruction
     r"rm\s+(-rf?|--recursive)\s+[/~]",
@@ -33,7 +33,7 @@ DANGEROUS_COMMAND_PATTERNS = [
     r":\(\)\s*\{\s*:\|:&\s*\}\s*;",
 ]
 
-# Safe command regex patterns — can be auto-approved
+# Safe command regex patterns - can be auto-approved
 SAFE_COMMAND_PATTERNS = [
     # Information commands
     r"^(ls|dir|pwd|cd|echo|cat|head|tail|less|more|wc)(\s|$)",
