@@ -1,0 +1,3 @@
+export const API_BASE_URL = "VITE_API_BASE_URL";
+export const APP_URL = "VITE_APP_URL";
+export const CLERK_PUBLISHABLE_KEY = "VITE_CLERK_PUBLISHABLE_KEY";

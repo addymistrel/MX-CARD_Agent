@@ -1,7 +1,7 @@
 """Constants related to LLM model configuration and client behavior."""
 
 # Default model
-DEFAULT_MODEL_NAME = "arcee-ai/trinity-large-preview:free"
+DEFAULT_MODEL_NAME = "cohere/north-mini-code:free"
 DEFAULT_TEMPERATURE = 1
 MIN_TEMPERATURE = 0.0
 MAX_TEMPERATURE = 2.0

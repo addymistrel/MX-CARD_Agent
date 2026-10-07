@@ -86,6 +86,7 @@ from agent.agent import Agent
 from agent.events import AgentEventType
 from agent.persistence import PersistenceManager, SessionSnapshot
 from agent.session import Session
+from auth.manager import AgentAuthManager
 from config.config import ApprovalPolicy, Config
 from config.loader import load_config
 from constants.app import APP_NAME
@@ -100,8 +101,21 @@ class CLI:
         self.agent: Agent | None = None
         self.config = config
         self.tui = TUI(config, console)
+        self.auth_manager = AgentAuthManager()
+
+    def _check_auth_for_request(self) -> bool:
+        if self.auth_manager.is_logged_in():
+            return True
+
+        result = self.auth_manager.ensure_logged_in(console)
+        if not result:
+            console.print(
+                "[yellow]No active terminal session. The agent will continue, but the next request will require signing in again.[/yellow]"
+            )
+        return True
 
     async def run_single(self, message: str) -> str | None:
+        self._check_auth_for_request()
         async with Agent(self.config) as agent:
             self.agent = agent
             result = await self._process_message(message)
@@ -135,6 +149,7 @@ class CLI:
                             break
                         continue
 
+                    self._check_auth_for_request()
                     await self._process_message(user_input)
                 except KeyboardInterrupt:
                     console.print("\n[dim]Use /exit to quit[/dim]")

@@ -1,51 +1,52 @@
 import type { NavLink, FooterSection, SocialLink } from "@/types";
 
 export const SITE_NAME = "MX-CARD Agent";
-export const SITE_TAGLINE = "Your AI-Powered Coding Companion";
+export const SITE_TAGLINE = "Open-source AI for the terminal-first workflow";
 export const SITE_DESCRIPTION =
-  "An autonomous AI coding agent that reads, writes, edits files, runs shell commands, and manages complex projects - all from your terminal.";
+  "A lightweight open-source coding agent for developers who want a fast terminal workflow, clear automation, and transparent software built to stay in the loop.";
 export const COPYRIGHT_YEAR = 2026;
-export const TRADEMARK_NOTICE = "MX-CARD Agent is a trademark of addymistrel. All rights reserved.";
+export const TRADEMARK_NOTICE =
+  "MX-CARD Agent is open source and built for the developer community.";
 
 export const NAV_LINKS: NavLink[] = [
   { label: "Home", href: "/" },
-  { label: "Features", href: "/#features" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Docs", href: "/#tutorial" },
+  { label: "Docs", href: "/docs" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export const FOOTER_SECTIONS: FooterSection[] = [
   {
-    title: "Product",
+    title: "Project",
     links: [
-      { label: "Features", href: "/#features" },
-      { label: "Pricing", href: "/pricing" },
-      { label: "Screenshots", href: "/#screenshots" },
-      { label: "Tutorial", href: "/#tutorial" },
+      { label: "Home", href: "/" },
+      { label: "Docs", href: "/docs" },
+      { label: "Contact", href: "/contact" },
     ],
   },
   {
     title: "Resources",
     links: [
-      { label: "Documentation", href: "/docs" },
-      { label: "API Reference", href: "/api-reference" },
-      { label: "Changelog", href: "/changelog" },
-      { label: "Roadmap", href: "/roadmap" },
+      { label: "GitHub", href: "/docs" },
+      { label: "Contributing", href: "/docs" },
+      { label: "Roadmap", href: "/docs" },
     ],
   },
   {
-    title: "Company",
+    title: "Community",
     links: [
-      { label: "About", href: "/about" },
-      { label: "Blog", href: "/blog" },
-      { label: "Careers", href: "/careers" },
-      { label: "Contact", href: "/contact" },
+      { label: "Support", href: "/contact" },
+      { label: "Feedback", href: "/contact" },
+      { label: "Issues", href: "/contact" },
     ],
   },
 ];
 
 export const SOCIAL_LINKS: SocialLink[] = [
-  { name: "GitHub", href: "https://github.com/addymistrel/MX-CARD_Agent", icon: "github" },
+  {
+    name: "GitHub",
+    href: "https://github.com/addymistrel/MX-CARD_Agent",
+    icon: "github",
+  },
   { name: "Twitter", href: "https://twitter.com", icon: "twitter" },
   { name: "Discord", href: "https://discord.gg", icon: "discord" },
 ];

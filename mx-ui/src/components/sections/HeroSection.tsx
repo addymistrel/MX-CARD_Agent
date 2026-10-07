@@ -9,8 +9,8 @@ export function HeroSection() {
     <section className="relative overflow-hidden py-20 sm:py-32">
       {/* Background gradient */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 -translate-x-1/2 h-[600px] w-[600px] rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute right-0 top-1/2 h-[400px] w-[400px] rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute left-1/2 top-0 -translate-x-1/2 h-150 w-150 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute right-0 top-1/2 h-100 w-100 rounded-full bg-primary/5 blur-3xl" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
@@ -21,7 +21,7 @@ export function HeroSection() {
 
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
           Meet{" "}
-          <span className="bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+          <span className="bg-linear-to-r from-primary via-emerald-400 to-teal-500 bg-clip-text text-transparent">
             {SITE_NAME}
           </span>
         </h1>
@@ -35,41 +35,48 @@ export function HeroSection() {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link to="/auth">
+          <Link to="/docs">
             <Button size="lg" className="gap-2 text-base px-8">
-              Get Started <ArrowRight className="h-4 w-4" />
+              Read the Docs <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <a href="#features">
+          <Link to="/contact">
             <Button variant="outline" size="lg" className="text-base px-8">
-              Learn More
+              Contact
             </Button>
-          </a>
+          </Link>
         </div>
 
         {/* Terminal preview */}
-        <div className="mx-auto mt-16 max-w-3xl rounded-xl border bg-card shadow-2xl overflow-hidden">
-          <div className="flex items-center gap-2 border-b px-4 py-3 bg-muted/50">
+        <div className="mx-auto mt-16 max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-[0_24px_80px_rgba(16,185,129,0.12)]">
+          <div className="flex items-center gap-2 border-b border-border bg-secondary/70 px-4 py-3">
             <div className="h-3 w-3 rounded-full bg-red-400" />
             <div className="h-3 w-3 rounded-full bg-yellow-400" />
             <div className="h-3 w-3 rounded-full bg-green-400" />
-            <span className="ml-2 text-xs text-muted-foreground font-mono">mx-card-agent</span>
+            <span className="ml-2 text-xs font-medium text-muted-foreground font-mono">
+              mx-card-agent
+            </span>
           </div>
-          <div className="p-6 text-left font-mono text-sm leading-relaxed">
+          <div className="p-6 text-left font-mono text-sm leading-relaxed text-card-foreground">
             <p className="text-muted-foreground">$ python main.py</p>
             <p className="mt-2 text-primary">✦ MX-CARD Agent v1.0</p>
-            <p className="text-muted-foreground">  Model: gpt-4o &nbsp;│&nbsp; CWD: ~/my-project</p>
-            <p className="mt-3 text-foreground">&gt; Fix the authentication bug in auth.py</p>
+            <p className="text-muted-foreground">
+              {" "}
+              Model: gpt-4o &nbsp;│&nbsp; CWD: ~/my-project
+            </p>
+            <p className="mt-3 text-foreground">
+              &gt; Fix the auth bug in app.py
+            </p>
             <p className="mt-2 text-muted-foreground">
-              <span className="text-green-500">✓</span> Reading auth.py...
+              <span className="text-primary">✓</span> Reading app.py...
             </p>
             <p className="text-muted-foreground">
-              <span className="text-green-500">✓</span> Found issue on line 42
+              <span className="text-primary">✓</span> Found issue on line 42
             </p>
             <p className="text-muted-foreground">
-              <span className="text-green-500">✓</span> Applied fix &amp; verified
+              <span className="text-primary">✓</span> Applied fix &amp; verified
             </p>
-            <p className="mt-2 text-primary">Done in 3.2s - 1 file changed</p>
+            <p className="mt-2 text-primary">Done in 3.2s — 1 file changed</p>
           </div>
         </div>
       </div>
