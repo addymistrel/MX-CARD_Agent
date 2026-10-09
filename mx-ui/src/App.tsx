@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/react";
 import { Provider } from "react-redux";
 import { store } from "@/store";
@@ -8,6 +8,7 @@ import { HomePage } from "@/pages/home";
 import { DocsPage } from "@/pages/docs";
 import { ContactPage } from "@/pages/contact";
 import { AuthPage } from "@/pages/auth";
+import { AuthSuccessPage } from "@/pages/auth/success";
 import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 import { useEffect } from "react";
 
@@ -15,6 +16,7 @@ const AUTH_CALLBACK_STORAGE_KEY = "mx-card-pending-auth-callback";
 
 function AuthCallbackBridge() {
   const { isSignedIn, user } = useUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isSignedIn || !user) return;
@@ -35,8 +37,9 @@ function AuthCallbackBridge() {
       .catch(() => undefined)
       .finally(() => {
         sessionStorage.removeItem(AUTH_CALLBACK_STORAGE_KEY);
+        navigate("/auth/success");
       });
-  }, [isSignedIn, user]);
+  }, [isSignedIn, user, navigate]);
 
   return null;
 }
@@ -54,6 +57,7 @@ export default function App() {
               <Route path="/docs" element={<DocsPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/auth/success" element={<AuthSuccessPage />} />
               <Route
                 path="/dashboard"
                 element={

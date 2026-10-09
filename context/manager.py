@@ -29,10 +29,18 @@ class MessageItem:
         if self.tool_calls:
             result["tool_calls"] = self.tool_calls
 
-        if self.content or self.role in ("assistant", "tool", "user"):
-            result["content"] = self.content or ""
+        if self.role == "assistant":
+            if self.content:
+                result["content"] = self.content
+            elif not self.tool_calls:
+                result["content"] = ""
+        elif self.content:
+            result["content"] = self.content
+        else:
+            result["content"] = ""
 
         return result
+
 
 
 class ContextManager:

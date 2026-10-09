@@ -576,6 +576,8 @@ class TUI:
 
 - `/help` - Show this help
 - `/exit` or `/quit` - Exit the agent
+- `/stop` - Stop execution and return to prompt for a new request
+- `/wait` - Pause execution to enter additional instructions/info, then resume
 - `/clear` - Clear conversation history
 - `/undo` - Undo the last file change
 - `/undolist` - Show recent file changes
@@ -596,6 +598,8 @@ class TUI:
 ## Tips
 
 - Just type your message to chat with the agent
+- Type /stop during execution to immediately cancel and enter a new prompt
+- Type /wait during execution to pause and provide extra instructions
 - The agent can read, write, and execute code
 - Some operations require approval (can be configured)
 """

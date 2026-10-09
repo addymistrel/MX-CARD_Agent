@@ -28,10 +28,12 @@ class SessionSnapshot:
     turn_count: int
     messages: list[dict[str, Any]]
     total_usage: TokenUsage
+    platform: str = sys.platform
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "session_id": self.session_id,
+            "platform": self.platform,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "turn_count": self.turn_count,
@@ -43,6 +45,7 @@ class SessionSnapshot:
     def from_dict(cls, data: dict[str, Any]) -> SessionSnapshot:
         return cls(
             session_id=data["session_id"],
+            platform=data.get("platform", sys.platform),
             created_at=datetime.fromisoformat(data["created_at"]),
             updated_at=datetime.fromisoformat(data["updated_at"]),
             turn_count=data["turn_count"],
@@ -88,6 +91,7 @@ class PersistenceManager:
             sessions.append(
                 {
                     "session_id": data["session_id"],
+                    "platform": data.get("platform", sys.platform),
                     "created_at": data["created_at"],
                     "updated_at": data["updated_at"],
                     "turn_count": data["turn_count"],
@@ -128,6 +132,7 @@ class PersistenceManager:
                     {
                         "checkpoint_id": file_path.stem,
                         "session_id": data.get("session_id", "unknown"),
+                        "platform": data.get("platform", sys.platform),
                         "created_at": data.get("created_at", "unknown"),
                         "turn_count": data.get("turn_count", 0),
                     }

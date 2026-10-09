@@ -1,7 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SignIn, SignUp, useUser } from "@clerk/react";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "signup";
@@ -21,7 +20,7 @@ export function AuthPage() {
       sessionStorage.setItem(AUTH_CALLBACK_STORAGE_KEY, callbackUrl);
     }
 
-    if (isSignedIn && !callbackUrl) {
+    if (isSignedIn && !callbackUrl && !sessionStorage.getItem(AUTH_CALLBACK_STORAGE_KEY)) {
       navigate("/");
     }
   }, [isSignedIn, navigate]);
@@ -48,14 +47,13 @@ export function AuthPage() {
       .catch(() => undefined)
       .finally(() => {
         sessionStorage.removeItem(AUTH_CALLBACK_STORAGE_KEY);
-        window.setTimeout(() => window.close(), 800);
+        navigate("/auth/success");
       });
-  }, [isSignedIn, user]);
+  }, [isSignedIn, user, navigate]);
 
   return (
     <section className="flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
-        {/* Mode toggle */}
         <div className="flex rounded-lg bg-muted p-1 mb-6">
           {(["login", "signup"] as const).map((m) => (
             <button
@@ -73,7 +71,6 @@ export function AuthPage() {
           ))}
         </div>
 
-        {/* Clerk embedded components */}
         <div className="flex justify-center">
           {mode === "login" ? (
             <SignIn

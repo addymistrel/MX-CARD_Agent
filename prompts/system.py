@@ -55,9 +55,34 @@ You are pair programming with the user to help them accomplish their goals. You 
 
 
 def _get_environment_section(config: Config) -> str:
-    """Generate the environment section."""
     now = datetime.now()
     os_info = f"{platform.system()} {platform.release()}"
+    curr_platform = platform.system().lower()
+
+    if curr_platform == "windows":
+        platform_rules = """
+- **Platform**: Windows (win32)
+- **Active Shell**: Windows PowerShell (powershell.exe)
+- **CRITICAL PLATFORM-SPECIFIC COMMAND RULES**:
+  - The host machine is WINDOWS. All terminal and shell commands are executed using **Windows PowerShell**.
+  - NEVER execute Unix bash commands (such as `ls`, `ls -la`, `cat`, `grep`, `rm -rf`, `export VAR=...`, `source`).
+  - ONLY generate commands that execute natively and successfully in Windows PowerShell.
+  - Use native Windows PowerShell commands and syntax:
+    - Listing directory contents: `Get-ChildItem` or `dir` (never use Unix flags like `-la` or `-lh`)
+    - Reading files: Use the `read_file` tool directly, or `Get-Content` in PowerShell
+    - Searching text: Use the `grep` tool, or `Select-String` in PowerShell
+    - Searching files: Use the `glob` tool, or `Get-ChildItem -Recurse -Filter ...`
+    - Environment variables: `$env:VAR_NAME` (NOT `$VAR_NAME`)
+    - Path separators: Backslash `\\` or standard forward slash `/`
+  - Never try Unix commands first and then fall back to Windows commands. Generate ONLY Windows-compatible commands on the very first attempt.
+"""
+    else:
+        platform_rules = f"""
+- **Platform**: {platform.system()} ({sys.platform})
+- **Active Shell**: {_get_shell_info()}
+- **PLATFORM-SPECIFIC COMMAND RULES**:
+  - The host machine is {platform.system()}. Execute standard Unix/Linux shell commands compatible with {_get_shell_info()}.
+"""
 
     return f"""# Environment
 
@@ -65,19 +90,18 @@ def _get_environment_section(config: Config) -> str:
 - **Operating System**: {os_info}
 - **Working Directory**: {config.cwd}
 - **Shell**: {_get_shell_info()}
-
+{platform_rules}
 The user has granted you access to run tools in service of their request. Use them when needed."""
 
 
 def _get_shell_info() -> str:
-    """Get shell information based on platform."""
     import os
     import sys
 
     if sys.platform == "darwin":
         return os.environ.get("SHELL", "/bin/zsh")
     elif sys.platform == "win32":
-        return "PowerShell/cmd.exe"
+        return "Windows PowerShell (powershell.exe)"
     else:
         return os.environ.get("SHELL", "/bin/bash")
 
@@ -154,8 +178,8 @@ You are a coding agent. Please keep going until the query is completely resolved
 ## Tool Usage
 
 - **Parallelism:** Execute multiple independent tool calls in parallel when feasible (i.e. searching the codebase, reading multiple files). Maximize use of parallel tool calls where possible to increase efficiency. However, if some tool calls depend on previous calls to inform dependent values, do NOT call these tools in parallel and instead call them sequentially.
-- **Command Execution:** Use the `shell` tool for running shell commands. Before executing commands that modify the file system, codebase, or system state, provide a brief explanation of the command's purpose and potential impact. When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
-- **File Operations:** Use specialized tools instead of bash commands when possible, as this provides a better user experience. For file operations, use dedicated tools: `read_file` for reading files instead of cat/head/tail, `edit` for single-file editing instead of sed/awk, `apply_patch` for multi-file edits (2+ files), and `write_file` for creating files instead of cat with heredoc or echo redirection. Reserve bash tools exclusively for actual system commands and terminal operations that require shell execution. NEVER use bash echo or other command-line tools to communicate thoughts, explanations, or instructions to the user. Output all communication directly in your response text instead.
+- **Command Execution:** Use the `shell` tool for running shell commands. Always tailor commands strictly to the active platform. On Windows, ALWAYS generate valid Windows PowerShell commands (never Unix bash commands). Before executing commands that modify the file system, codebase, or system state, provide a brief explanation of the command's purpose and potential impact. When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
+- **File Operations:** Use specialized tools instead of shell commands when possible, as this provides a better user experience. For file operations, use dedicated tools: `read_file` for reading files instead of cat/type, `edit` for single-file editing, `apply_patch` for multi-file edits (2+ files), and `write_file` for creating files. Reserve shell tools exclusively for actual system commands and terminal operations that require shell execution. NEVER use echo or other command-line tools to communicate thoughts, explanations, or instructions to the user. Output all communication directly in your response text instead.
 - **File Creation:** Do not create new files unless necessary for achieving your goal or explicitly requested. Prefer editing an existing file when possible. This includes markdown files.
 - **Remembering Facts:** Use the `memory` tool to remember specific, *user-related* facts or preferences when the user explicitly asks, or when they state a clear, concise piece of information that would help personalize or streamline *your future interactions with them* (e.g., preferred coding style, common project paths they use, personal tool aliases). This tool is for user-specific information that should persist across sessions. Do *not* use it for general project context or information.
 - **Task Management:** Use the `todos` tool to track multi-step tasks. Mark tasks as completed as soon as you finish each task. Do not batch up multiple tasks before marking them as completed. Use the todos tool VERY frequently to ensure that you are tracking your tasks and giving the user visibility into your progress. These tools are also EXTREMELY helpful for planning tasks, and for breaking down larger complex tasks into smaller steps.

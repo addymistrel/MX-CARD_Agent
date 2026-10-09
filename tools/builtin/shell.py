@@ -17,7 +17,7 @@ from constants.tools import (
 
 
 class ShellParams(BaseModel):
-    command: str = Field(..., description="The shell command to execute")
+    command: str = Field(..., description="The shell command to execute (Windows PowerShell on Windows, Bash on Unix)")
     timeout: int = Field(
         SHELL_DEFAULT_TIMEOUT, ge=SHELL_MIN_TIMEOUT, le=SHELL_MAX_TIMEOUT, description=f"Timeout in seconds (default: {SHELL_DEFAULT_TIMEOUT})"
     )
@@ -27,7 +27,7 @@ class ShellParams(BaseModel):
 class ShellTool(Tool):
     name = "shell"
     kind = ToolKind.SHELL
-    description = "Execute a shell command. Use this for running system commands, scripts and CLI tools."
+    description = "Execute a shell command (using Windows PowerShell on Windows, Bash on Unix). Generate commands strictly compatible with the current platform."
 
     schema: type[ShellParams] = ShellParams
 
@@ -78,7 +78,15 @@ class ShellTool(Tool):
 
         env = self._build_environment()
         if sys.platform == "win32":
-            shell_cmd = ["cmd.exe", "/c", params.command]
+            shell_cmd = [
+                "powershell.exe",
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                params.command,
+            ]
         else:
             shell_cmd = ["/bin/bash", "-c", params.command]
 

@@ -126,6 +126,7 @@ class CLI:
             APP_NAME,
             lines=[
                 f"model: {self.config.model_name}",
+                f"platform: {sys.platform}",
                 f"cwd: {self.config.cwd}",
                 WELCOME_COMMANDS,
             ],
@@ -173,46 +174,127 @@ class CLI:
 
         assistant_streaming = False
         final_response: str | None = None
+        stop_monitoring = asyncio.Event()
 
-        async for event in self.agent.run(message):
-            if event.type == AgentEventType.TEXT_DELTA:
-                content = event.data.get("content", "")
-                if not assistant_streaming:
-                    self.tui.begin_assistant()
-                    assistant_streaming = True
-                self.tui.stream_assistant_delta(content)
-            elif event.type == AgentEventType.TEXT_COMPLETE:
-                final_response = event.data.get("content")
-                if assistant_streaming:
-                    self.tui.end_assistant()
-                    assistant_streaming = False
-            elif event.type == AgentEventType.AGENT_ERROR:
-                error = event.data.get("error", "Unknown error")
-                console.print(f"\n[error]Error: {error}[/error]")
-            elif event.type == AgentEventType.TOOL_CALL_START:
-                tool_name = event.data.get("name", "unknown")
-                tool_kind = self._get_tool_kind(tool_name)
-                self.tui.tool_call_start(
-                    event.data.get("call_id", ""),
-                    tool_name,
-                    tool_kind,
-                    event.data.get("arguments", {}),
-                )
-            elif event.type == AgentEventType.TOOL_CALL_COMPLETE:
-                tool_name = event.data.get("name", "unknown")
-                tool_kind = self._get_tool_kind(tool_name)
-                self.tui.tool_call_complete(
-                    event.data.get("call_id", ""),
-                    tool_name,
-                    tool_kind,
-                    event.data.get("success", False),
-                    event.data.get("output", ""),
-                    event.data.get("error"),
-                    event.data.get("metadata"),
-                    event.data.get("diff"),
-                    event.data.get("truncated", False),
-                    event.data.get("exit_code"),
-                )
+        async def _monitor_input() -> None:
+            buffer = ""
+            while not stop_monitoring.is_set():
+                try:
+                    if sys.platform == "win32":
+                        import msvcrt
+                        while msvcrt.kbhit():
+                            ch = msvcrt.getwch()
+                            if ch in ("\r", "\n"):
+                                cmd = buffer.strip().lower()
+                                buffer = ""
+                                if cmd == "/stop":
+                                    console.print("\n[bold yellow]⏹ /stop received. Stopping execution...[/bold yellow]")
+                                    if self.agent:
+                                        self.agent.stop()
+                                    return
+                                elif cmd == "/wait":
+                                    console.print("\n[bold yellow]⏸ /wait received. Pausing execution...[/bold yellow]")
+                                    if self.agent:
+                                        self.agent.pause()
+                                    info = await asyncio.to_thread(console.input, "\n[bold cyan]Type more info to resume (or /stop to cancel): [/bold cyan]")
+                                    if info.strip().lower() == "/stop":
+                                        console.print("\n[bold yellow]⏹ /stop received. Stopping execution...[/bold yellow]")
+                                        if self.agent:
+                                            self.agent.stop()
+                                        return
+                                    else:
+                                        if self.agent:
+                                            self.agent.resume(info.strip() if info.strip() else None)
+                                        console.print("[bold green]▶ Resuming execution...[/bold green]")
+                            elif ch == "\x03":
+                                if self.agent:
+                                    self.agent.stop()
+                                return
+                            elif ch == "\x08":
+                                buffer = buffer[:-1]
+                            else:
+                                buffer += ch
+                    else:
+                        import select
+                        rlist, _, _ = select.select([sys.stdin], [], [], 0)
+                        if rlist:
+                            line = sys.stdin.readline().strip().lower()
+                            if line == "/stop":
+                                console.print("\n[bold yellow]⏹ /stop received. Stopping execution...[/bold yellow]")
+                                if self.agent:
+                                    self.agent.stop()
+                                return
+                            elif line == "/wait":
+                                console.print("\n[bold yellow]⏸ /wait received. Pausing execution...[/bold yellow]")
+                                if self.agent:
+                                    self.agent.pause()
+                                info = await asyncio.to_thread(console.input, "\n[bold cyan]Type more info to resume (or /stop to cancel): [/bold cyan]")
+                                if info.strip().lower() == "/stop":
+                                    console.print("\n[bold yellow]⏹ /stop received. Stopping execution...[/bold yellow]")
+                                    if self.agent:
+                                        self.agent.stop()
+                                    return
+                                else:
+                                    if self.agent:
+                                        self.agent.resume(info.strip() if info.strip() else None)
+                                    console.print("[bold green]▶ Resuming execution...[/bold green]")
+                except Exception:
+                    pass
+                await asyncio.sleep(0.05)
+
+        monitor_task = asyncio.create_task(_monitor_input())
+
+        try:
+            async for event in self.agent.run(message):
+                if event.type == AgentEventType.TEXT_DELTA:
+                    content = event.data.get("content", "")
+                    if not assistant_streaming:
+                        self.tui.begin_assistant()
+                        assistant_streaming = True
+                    self.tui.stream_assistant_delta(content)
+                elif event.type == AgentEventType.TEXT_COMPLETE:
+                    final_response = event.data.get("content")
+                    if assistant_streaming:
+                        self.tui.end_assistant()
+                        assistant_streaming = False
+                elif event.type == AgentEventType.AGENT_ERROR:
+                    error = event.data.get("error", "Unknown error")
+                    console.print(f"\n[error]Error: {error}[/error]")
+                elif event.type == AgentEventType.TOOL_CALL_START:
+                    tool_name = event.data.get("name", "unknown")
+                    tool_kind = self._get_tool_kind(tool_name)
+                    self.tui.tool_call_start(
+                        event.data.get("call_id", ""),
+                        tool_name,
+                        tool_kind,
+                        event.data.get("arguments", {}),
+                    )
+                elif event.type == AgentEventType.TOOL_CALL_COMPLETE:
+                    tool_name = event.data.get("name", "unknown")
+                    tool_kind = self._get_tool_kind(tool_name)
+                    self.tui.tool_call_complete(
+                        event.data.get("call_id", ""),
+                        tool_name,
+                        tool_kind,
+                        event.data.get("success", False),
+                        event.data.get("output", ""),
+                        event.data.get("error"),
+                        event.data.get("metadata"),
+                        event.data.get("diff"),
+                        event.data.get("truncated", False),
+                        event.data.get("exit_code"),
+                    )
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            if self.agent:
+                self.agent.stop()
+            console.print("\n[bold yellow]⏹ Execution stopped by user.[/bold yellow]")
+        finally:
+            stop_monitoring.set()
+            monitor_task.cancel()
+            try:
+                await monitor_task
+            except (asyncio.CancelledError, Exception):
+                pass
 
         return final_response
 
@@ -223,6 +305,16 @@ class CLI:
         cmd_args = parts[1] if len(parts) > 1 else ""
         if cmd_name == "/exit" or cmd_name == "/quit":
             return False
+        elif cmd_name == "/stop":
+            if self.agent:
+                self.agent.stop()
+            console.print("[dim]No active execution to stop. Ready for new prompt.[/dim]")
+        elif cmd_name == "/wait":
+            more_info = console.input("\n[bold cyan]Enter additional info to add to context: [/bold cyan]").strip()
+            if more_info and self.agent:
+                ctx = self.agent.session.get_context_manager()
+                ctx.add_user_message(more_info)
+                console.print("[success]Additional info added to context.[/success]")
         elif command == "/help":
             self.tui.show_help()
         elif not self.agent:
@@ -330,6 +422,7 @@ class CLI:
             ctx = self.agent.session.get_context_manager()
             session_snapshot = SessionSnapshot(
                 session_id=self.agent.session.session_id,
+                platform=self.agent.session.platform,
                 created_at=self.agent.session.created_at,
                 updated_at=self.agent.session.updated_at,
                 turn_count=self.agent.session.turn_count,
@@ -338,7 +431,7 @@ class CLI:
             )
             persistence_manager.save_session(session_snapshot)
             console.print(
-                f"[success]Session saved: {self.agent.session.session_id}[/success]"
+                f"[success]Session saved: {self.agent.session.session_id} (platform: {self.agent.session.platform})[/success]"
             )
         elif cmd_name == "/sessions":
             persistence_manager = PersistenceManager()
@@ -346,7 +439,7 @@ class CLI:
             console.print("\n[bold]Saved Sessions[/bold]")
             for s in sessions:
                 console.print(
-                    f"  • {s['session_id']} (turns: {s['turn_count']}, updated: {s['updated_at']})"
+                    f"  • {s['session_id']} (platform: {s.get('platform', sys.platform)}, turns: {s['turn_count']}, updated: {s['updated_at']})"
                 )
         elif cmd_name == "/resume":
             if not cmd_args:
@@ -361,6 +454,7 @@ class CLI:
                         config=self.config,
                     )
                     await session.initialize()
+                    session.platform = sys.platform
                     session.session_id = snapshot.session_id
                     session.created_at = snapshot.created_at
                     session.updated_at = snapshot.updated_at
@@ -389,13 +483,14 @@ class CLI:
 
                     self.agent.session = session
                     console.print(
-                        f"[success]Resumed session: {session.session_id}[/success]"
+                        f"[success]Resumed session: {session.session_id} (platform: {session.platform})[/success]"
                     )
         elif cmd_name == "/checkpoint":
             persistence_manager = PersistenceManager()
             ctx = self.agent.session.get_context_manager()
             session_snapshot = SessionSnapshot(
                 session_id=self.agent.session.session_id,
+                platform=self.agent.session.platform,
                 created_at=self.agent.session.created_at,
                 updated_at=self.agent.session.updated_at,
                 turn_count=self.agent.session.turn_count,
@@ -403,7 +498,7 @@ class CLI:
                 total_usage=ctx.total_usage,
             )
             checkpoint_id = persistence_manager.save_checkpoint(session_snapshot)
-            console.print(f"[success]Checkpoint created: {checkpoint_id}[/success]")
+            console.print(f"[success]Checkpoint created: {checkpoint_id} (platform: {self.agent.session.platform})[/success]")
         elif cmd_name == "/checkpoints":
             persistence_manager = PersistenceManager()
             checkpoints = persistence_manager.list_checkpoints()
@@ -414,7 +509,7 @@ class CLI:
                 for cp in checkpoints:
                     console.print(
                         f"  • {cp['checkpoint_id']}  "
-                        f"(turns: {cp['turn_count']}, created: {cp['created_at']})"
+                        f"(platform: {cp.get('platform', sys.platform)}, turns: {cp['turn_count']}, created: {cp['created_at']})"
                     )
                 console.print("\n[dim]Use /restore <checkpoint_id> to restore[/dim]")
         elif cmd_name == "/restore":
@@ -430,6 +525,7 @@ class CLI:
                         config=self.config,
                     )
                     await session.initialize()
+                    session.platform = sys.platform
                     session.session_id = snapshot.session_id
                     session.created_at = snapshot.created_at
                     session.updated_at = snapshot.updated_at
@@ -458,7 +554,7 @@ class CLI:
 
                     self.agent.session = session
                     console.print(
-                        f"[success]Resumed session: {session.session_id}, checkpoint: {cmd_args}[/success]"
+                        f"[success]Resumed session: {session.session_id}, checkpoint: {cmd_args} (platform: {session.platform})[/success]"
                     )
         else:
             console.print(f"[error]Unknown command: {cmd_name}[/error]")
@@ -512,4 +608,5 @@ def main(
         sys.exit(1)
 
 
-main()
+if __name__ == "__main__":
+    main()

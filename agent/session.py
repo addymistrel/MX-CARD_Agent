@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import sys
 from typing import Any
 import uuid
 from client.llm_client import LLMClient
@@ -41,6 +42,7 @@ class Session:
         self.hook_system = HookSystem(config)
         self.undo_tracker = UndoTracker()
         self.session_id = str(uuid.uuid4())
+        self.platform = sys.platform
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
 
@@ -109,6 +111,7 @@ class Session:
         ctx = self.get_context_manager()
         return {
             "session_id": self.session_id,
+            "platform": self.platform,
             "created_at": self.created_at.isoformat(),
             "turn_count": self.turn_count,
             "message_count": ctx.message_count,
