@@ -26,24 +26,13 @@ for %%I in ("%SCRIPT_DIR%\..") do set "PROJECT_ROOT=%%~fI"
 echo   Project root : %PROJECT_ROOT%
 echo.
 
-:: ── Check for .env ───────────────────────────────────────────
-
-echo [1/5] Checking for .env file...
-if not exist "%PROJECT_ROOT%\.env" (
-    echo [ERROR] .env file not found at %PROJECT_ROOT%\.env
-    echo         The exe needs .env with your API key baked in.
-    goto :error
-)
-echo        .env found.
-echo.
-
 :: ── Check for PyInstaller ────────────────────────────────────
 
-echo [2/5] Checking for PyInstaller...
-pip show pyinstaller >nul 2>&1
+echo [1/4] Checking for PyInstaller...
+python -m PyInstaller --version >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo        PyInstaller not found. Installing...
-    pip install pyinstaller
+    python -m pip install pyinstaller
     if %ERRORLEVEL% NEQ 0 (
         echo [ERROR] Failed to install PyInstaller.
         goto :error
@@ -54,7 +43,7 @@ echo.
 
 :: ── Clean previous builds ────────────────────────────────────
 
-echo [3/5] Cleaning previous builds...
+echo [2/4] Cleaning previous builds...
 if exist "%SCRIPT_DIR%\dist" rmdir /s /q "%SCRIPT_DIR%\dist"
 if exist "%SCRIPT_DIR%\build" rmdir /s /q "%SCRIPT_DIR%\build"
 mkdir "%SCRIPT_DIR%\dist"
@@ -63,10 +52,10 @@ echo.
 
 :: ── Build the agent exe ──────────────────────────────────────
 
-echo [4/5] Building mxcardagent.exe (agent)...
+echo [3/4] Building mxcardagent.exe (agent)...
 echo        This may take a few minutes...
 echo.
-pyinstaller "%SCRIPT_DIR%\mxcardagent.spec" --distpath "%SCRIPT_DIR%\dist" --workpath "%SCRIPT_DIR%\build" --noconfirm
+python -m PyInstaller "%SCRIPT_DIR%\mxcardagent.spec" --distpath "%SCRIPT_DIR%\dist" --workpath "%SCRIPT_DIR%\build" --noconfirm
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] Agent build failed.
@@ -83,10 +72,10 @@ echo.
 
 :: ── Build the installer exe ─────────────────────────────────
 
-echo [5/5] Building mxcagent-installer.exe (installer)...
+echo [4/4] Building mxcagent-installer.exe (installer)...
 echo        Bundling agent exe inside installer...
 echo.
-pyinstaller "%SCRIPT_DIR%\installer.spec" --distpath "%SCRIPT_DIR%\dist" --workpath "%SCRIPT_DIR%\build\installer" --noconfirm
+python -m PyInstaller "%SCRIPT_DIR%\installer.spec" --distpath "%SCRIPT_DIR%\dist" --workpath "%SCRIPT_DIR%\build\installer" --noconfirm
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] Installer build failed.

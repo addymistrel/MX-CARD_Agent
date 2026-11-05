@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Download, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/constants/site";
@@ -45,6 +45,11 @@ export function HeroSection() {
               Contact
             </Button>
           </Link>
+          <a href="/downloads/mxcagent-installer.exe" download>
+            <Button variant="secondary" size="lg" className="gap-2 text-base px-8">
+              Download for Windows <Download className="h-4 w-4" />
+            </Button>
+          </a>
         </div>
 
         {/* Terminal preview */}

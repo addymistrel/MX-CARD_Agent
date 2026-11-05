@@ -317,6 +317,8 @@ class CLI:
                 console.print("[success]Additional info added to context.[/success]")
         elif command == "/help":
             self.tui.show_help()
+        elif cmd_name == "/model-helper":
+            self.tui.show_model_helper()
         elif not self.agent:
             console.print("[error]No active agent session[/error]")
         elif command == "/clear":
