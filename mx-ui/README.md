@@ -68,6 +68,13 @@ npm run build
 npm run preview
 ```
 
+### Vercel deployment
+
+The app uses client-side routes such as `/auth` and `/docs`. Keep
+`vercel.json` in the Vite project root so direct links and authentication
+callback URLs are rewritten to `index.html` instead of returning a platform
+404.
+
 ---
 
 ## Architecture Rules
@@ -82,4 +89,3 @@ npm run preview
 ## License
 
 Part of the [MX-CARD Agent](https://github.com/addymistrel/MX-CARD_Agent) project by [@addymistrel](https://github.com/addymistrel).
-

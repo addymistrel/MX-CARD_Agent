@@ -101,8 +101,8 @@ echo echo Note: The uninstaller folder will remain. You can delete it:
 echo echo   %%LOCALAPPDATA%%\MXCardAgent
 echo echo.
 echo pause
-echo :: Self-delete: start a background cmd to delete us after exit
-echo start /b "" cmd /c "timeout /t 2 /nobreak >nul & rmdir /s /q "%%LOCALAPPDATA%%\MXCardAgent""
+echo echo The install folder can be removed manually after uninstall:
+echo echo   %%LOCALAPPDATA%%\MXCardAgent
 ) > "%INSTALL_DIR%\uninstall.bat"
 
 echo        Created uninstall.bat at %INSTALL_DIR%

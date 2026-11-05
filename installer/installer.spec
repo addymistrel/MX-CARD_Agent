@@ -55,7 +55,8 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    # UPX packing can trigger false-positive ransomware detections.
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,
