@@ -31,6 +31,10 @@ cd MX-CARD_Agent
 pip install -r requirements.txt
 ```
 
+For the packaged Windows installer, run `mxcagent-installer.exe`. On its first
+launch, it asks for an OpenRouter API key and shows the link to create one.
+The key is stored in encrypted form in the installation directory.
+
 ### Configuration
 
 Create a `.env` file in the project root:
@@ -65,6 +69,71 @@ python main.py "Explain what this project does"
 python main.py --cwd /path/to/project
 python main.py -c D:\Projects\MyApp "Add error handling to the API routes"
 ```
+
+### Build and install the Windows executable
+
+The repository includes a Windows build script that creates both the agent
+executable and the installer. Run these commands from PowerShell:
+
+```powershell
+cd D:\Projects\MX-CARD_Agent
+.\.venv\Scripts\Activate.ps1
+cd installer
+.\build.bat
+```
+
+The output is written to `installer\dist\`:
+
+- `mxcardagent.exe` - the standalone agent executable
+- `mxcagent-installer.exe` - the installer users should run
+
+Run the installer with:
+
+```powershell
+.\dist\mxcagent-installer.exe
+```
+
+The installer asks for an OpenRouter API key and stores the key encrypted in
+`%LOCALAPPDATA%\MXCardAgent\.env.enc`. Create an OpenRouter account and key at
+https://openrouter.ai/workspaces/default/keys. After installation, open a new
+terminal so the PATH update is loaded.
+
+Linux and macOS installers are coming soon. The source installation workflow
+can be used on supported platforms today.
+
+### Use the installed agent from any folder
+
+Once installed, open a new PowerShell window and change to any project:
+
+```powershell
+cd C:\Projects\my-app
+mxcagent
+```
+
+You can provide a one-time prompt:
+
+```powershell
+mxcagent "Explain this project and suggest improvements"
+```
+
+Or explicitly choose the project directory:
+
+```powershell
+mxcagent --cwd C:\Projects\my-app "Find the authentication bug"
+mxcagent -c C:\Projects\my-app "Review the API error handling"
+```
+
+Start the same workflow directly from the source checkout with:
+
+```powershell
+cd D:\Projects\MX-CARD_Agent
+.\.venv\Scripts\Activate.ps1
+python main.py
+```
+
+Inside interactive mode, use `/help` for all commands. Common commands include
+`/model <name>`, `/model-helper`, `/approval <mode>`, `/undo`, `/save`, and
+`/exit`.
 
 ## Key Features
 

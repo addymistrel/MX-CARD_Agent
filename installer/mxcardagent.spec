@@ -5,7 +5,7 @@ PyInstaller spec for mxcardagent.exe - single self-contained exe.
 Bundles EVERYTHING:
   - main.py + all source modules
   - All pip dependencies (openai, rich, click, tiktoken, etc.)
-  - .env file (API key & base URL baked in)
+  - Runtime configuration is supplied by the installer on first launch.
 
 No installer needed. No Python needed on target. Just run it.
 
@@ -47,14 +47,6 @@ for dirname in SOURCE_DIRS:
     src_path = os.path.join(PROJECT_ROOT, dirname)
     if os.path.isdir(src_path):
         datas.append((src_path, dirname))
-
-# Bundle .env (API key + base URL)
-dotenv = os.path.join(PROJECT_ROOT, '.env')
-if os.path.isfile(dotenv):
-    datas.append((dotenv, '.'))
-else:
-    print("WARNING: .env file not found at project root!")
-    print("         The exe will not have API keys baked in.")
 
 # ── Package metadata (for importlib.metadata.version() calls) ───────────────
 # Some libs (fastmcp, mcp, openai, etc.) call importlib.metadata.version()

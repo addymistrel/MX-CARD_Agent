@@ -583,6 +583,7 @@ class TUI:
 - `/undolist` - Show recent file changes
 - `/config` - Show current configuration
 - `/model <name>` - Change the model
+- `/model-helper` - Show model selection help
 - `/approval <mode>` - Change approval mode
 - `/approvalmodes` - Show all approval modes
 - `/stats` - Show session statistics
@@ -604,3 +605,13 @@ class TUI:
 - Some operations require approval (can be configured)
 """
         self.console.print(Markdown(help_text))
+
+    def show_model_helper(self) -> None:
+        model_url = "https://openrouter.ai/models?max_price=0&max_output_price=0"
+        helper_text = (
+            "To change models, use `/model <model name>`.\n\n"
+            f"For free models, compare available options here: "
+            f"[{model_url}]"
+            f"({model_url})"
+        )
+        self.console.print(Markdown(helper_text))

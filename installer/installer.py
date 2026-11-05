@@ -2,12 +2,13 @@
 MX-CARD Agent - Installer / Uninstaller
 Builds into a standalone .exe via PyInstaller.
 
-When run normally   → installs mxcagent.exe + adds to PATH
+When run normally   → prompts for an OpenRouter key, installs mxcagent.exe + adds to PATH
 When run with --uninstall → fully removes everything
 """
 
 import base64
 import ctypes
+import getpass
 import hashlib
 import os
 import shutil
@@ -140,13 +141,18 @@ def get_bundled_exe_path():
         return os.path.join(script_dir, "dist", "mxcardagent.exe")
 
 
-def get_bundled_env_path():
-    """Get the path to the bundled .env inside the installer."""
-    if getattr(sys, "frozen", False):
-        return os.path.join(sys._MEIPASS, ".env")  # type: ignore[attr-defined]
-    else:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(script_dir, "..", ".env")
+def prompt_for_api_key():
+    """Prompt for and return the OpenRouter API key for the installation."""
+    print("  An OpenRouter API key is required to use MX-CARD Agent.")
+    print("  Please create an OpenRouter account, then create an API key here:")
+    print("  https://openrouter.ai/workspaces/default/keys")
+    print()
+
+    while True:
+        api_key = getpass.getpass("  Enter your OpenRouter API key: ").strip()
+        if api_key:
+            return api_key
+        print("  API key cannot be empty. Please try again.")
 
 
 # ── Install ──────────────────────────────────────────────────────────────────
@@ -166,8 +172,11 @@ def do_install():
         input("\nPress Enter to exit...")
         sys.exit(1)
 
+    api_key = prompt_for_api_key()
+    print()
+
     # 2. Create install directory
-    print("[1/5] Creating install directory...")
+    print("[1/6] Creating install directory...")
     os.makedirs(INSTALL_DIR, exist_ok=True)
     print(f"  {INSTALL_DIR}")
     print()
@@ -180,22 +189,21 @@ def do_install():
     print(f"  Copied ({size_mb:.1f} MB)")
     print()
 
-    # 4. Encrypt .env and store as .env.enc
-    print("[3/6] Encrypting API keys...")
-    env_src = get_bundled_env_path()
+    # 4. Encrypt the user-provided API key and runtime configuration.
+    print("[3/6] Storing encrypted API configuration...")
     env_enc_dest = os.path.join(INSTALL_DIR, ".env.enc")
-    if os.path.isfile(env_src):
-        plain = open(env_src, "rb").read()
-        encrypted = _encrypt_bytes(plain)
-        with open(env_enc_dest, "wb") as f:
-            f.write(encrypted)
-        print("  Stored encrypted .env.enc")
-        # Never leave plain-text .env in install dir
-        plain_env = os.path.join(INSTALL_DIR, ".env")
-        if os.path.isfile(plain_env):
-            os.remove(plain_env)
-    else:
-        print("  WARNING: .env not found - no API keys stored!")
+    plain = (
+        f"MX_CARD_API_KEY={api_key}\n"
+        "MX_CARD_BASE_URL=https://openrouter.ai/api/v1\n"
+    ).encode("utf-8")
+    encrypted = _encrypt_bytes(plain)
+    with open(env_enc_dest, "wb") as f:
+        f.write(encrypted)
+    print("  Stored encrypted .env.enc")
+    # Never leave plain-text .env in install dir.
+    plain_env = os.path.join(INSTALL_DIR, ".env")
+    if os.path.isfile(plain_env):
+        os.remove(plain_env)
     print()
 
     # 5. Copy self as uninstaller
