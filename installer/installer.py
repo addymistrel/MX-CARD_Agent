@@ -25,6 +25,8 @@ INSTALLER_NAME = "mxcagent-installer.exe"
 UNINSTALLER_NAME = "uninstall.exe"
 INSTALL_DIR = os.path.join(os.environ["LOCALAPPDATA"], APP_NAME)
 REG_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\MXCardAgent"
+APP_URL = "https://mx-card-agent.vercel.app"
+SIGN_IN_URL = f"{APP_URL}/auth"
 
 # Must match the key in main.py
 _ENC_KEY = b"MxC4rd@g3nt!2026#SecureK3y$"
@@ -195,6 +197,8 @@ def do_install():
     plain = (
         f"MX_CARD_API_KEY={api_key}\n"
         "MX_CARD_BASE_URL=https://openrouter.ai/api/v1\n"
+        f"MX_CARD_APP_URL={APP_URL}\n"
+        f"MX_CARD_SIGN_IN_URL={SIGN_IN_URL}\n"
     ).encode("utf-8")
     encrypted = _encrypt_bytes(plain)
     with open(env_enc_dest, "wb") as f:
