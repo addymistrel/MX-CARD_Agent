@@ -101,6 +101,12 @@ terminal so the PATH update is loaded.
 Linux and macOS installers are coming soon. The source installation workflow
 can be used on supported platforms today.
 
+The Windows executable is currently unsigned. Some antivirus products may
+show a generic warning for unsigned PyInstaller applications. The build avoids
+UPX packing and detached self-deletion, but a signed Windows code-signing
+certificate is required to establish publisher reputation and remove these
+warnings reliably.
+
 ### Use the installed agent from any folder
 
 Once installed, open a new PowerShell window and change to any project:

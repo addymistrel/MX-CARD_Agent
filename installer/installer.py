@@ -12,10 +12,8 @@ import getpass
 import hashlib
 import os
 import shutil
-import subprocess
 import sys
 import winreg
-import time
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -304,16 +302,7 @@ def do_uninstall():
     print()
     input("Press Enter to exit...")
 
-    # Self-delete: spawn a background process to remove the install dir
-    # after this process exits
-    cleanup_cmd = f'ping -n 3 127.0.0.1 >nul & rmdir /s /q "{INSTALL_DIR}"'
-    subprocess.Popen(
-        cleanup_cmd,
-        shell=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        creationflags=0x00000008,  # DETACHED_PROCESS
-    )
+    print(f"  You can delete the remaining folder manually: {INSTALL_DIR}")
 
 
 # ── Entry point ──────────────────────────────────────────────────────────────
